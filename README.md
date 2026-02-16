@@ -1,54 +1,55 @@
-# MindFlow - Приложение для ментального здоровья
+# Mindful Breathing App
 
-Мобильное приложение для управления эмоциональным состоянием через практики осознанности, дыхательные упражнения и медитацию с интеграцией Apple HealthKit и Apple Watch.
+Мобильное приложение для медитации и дыхательных практик с интеграцией биометрических данных Apple HealthKit.
 
-## Особенности
+## 🌟 Основные возможности
 
-- 🧘‍♀️ Персонализированные упражнения на основе текущего эмоционального состояния
-- 💓 Интеграция с Apple HealthKit для отслеживания биометрических данных
-- ⌚ Поддержка Apple Watch для упражнений на запястье
-- 📊 Детальная статистика прогресса с тепловой картой активности
-- 🏆 Система достижений и мотивации
-- 🎧 Аудио-гиды для медитаций и дыхательных практик
-- 🌙 Темная и светлая темы оформления
-- 📱 Умные уведомления-напоминания
-- 🔗 Возможность делиться прогрессом
+- **Выбор эмоции**: Интерактивный выбор текущего эмоционального состояния
+- **Персонализированные упражнения**: Рекомендации на основе эмоции и биометрических данных
+- **Интеграция с HealthKit**: Мониторинг пульса, вариабельности сердечного ритма и уровня стресса
+- **Статистика и прогресс**: Тепловая карта активности и детальная аналитика
+- **Система достижений**: Мотивационные награды за регулярную практику
+- **Напоминания**: Умные уведомления для поддержания привычки
+- **Темная/светлая тема**: Адаптивный дизайн под предпочтения пользователя
 
-## Технологический стек
+## 🛠 Технологический стек
 
-- **React Native** 0.73.2
-- **TypeScript** 5.x
-- **Expo** (опционально)
+- **React Native** 0.73.4
+- **Expo** ~50.0.0
+- **TypeScript** 5.3.3
 - **React Navigation** 6.x
-- **Zustand** для управления состоянием
-- **React Native Reanimated** для анимаций
-- **Victory Native** для графиков
-- **Apple HealthKit** для биометрики
-- **WatchConnectivity** для синхронизации с Apple Watch
+- **Apple HealthKit** (через react-native-health)
+- **AsyncStorage** для локального хранения
+- **Expo Notifications** для push-уведомлений
+- **React Native Chart Kit** для визуализации данных
 
-## Требования
+## 📋 Требования
 
 - Node.js >= 18.x
 - npm >= 9.x или yarn >= 1.22.x
 - Xcode >= 15.0 (для iOS разработки)
-- CocoaPods >= 1.14.x
-- macOS для разработки под iOS/watchOS
-- Активный Apple Developer аккаунт (для HealthKit и WatchOS)
+- CocoaPods >= 1.12.0
+- Expo CLI
+- iOS устройство или симулятор с iOS 14.0+
 
-## Установка
+## 🚀 Установка
 
 ### 1. Клонирование репозитория
 
 ```bash
-git clone https://github.com/yourusername/mindflow.git
-cd mindflow
+git clone https://github.com/yourusername/mindful-breathing-app.git
+cd mindful-breathing-app
 ```
 
 ### 2. Установка зависимостей
 
 ```bash
 npm install
-# или
+```
+
+или
+
+```bash
 yarn install
 ```
 
@@ -60,362 +61,334 @@ pod install
 cd ..
 ```
 
-### 4. Настройка HealthKit
+### 4. Конфигурация HealthKit
 
-Откройте `ios/MindFlow.xcworkspace` в Xcode и:
-
-1. Выберите проект MindFlow в навигаторе
-2. Перейдите в раздел "Signing & Capabilities"
-3. Добавьте capability "HealthKit"
-4. В `Info.plist` добавьте:
+Убедитесь, что в `ios/Info.plist` присутствуют необходимые permissions:
 
 ```xml
 <key>NSHealthShareUsageDescription</key>
-<string>MindFlow использует данные о здоровье для персонализации упражнений</string>
+<string>Приложению нужен доступ к данным о здоровье для анализа уровня стресса</string>
 <key>NSHealthUpdateUsageDescription</key>
-<string>MindFlow сохраняет данные о сессиях в Health</string>
+<string>Приложение сохраняет данные о сессиях медитации</string>
 ```
 
-### 5. Настройка Apple Watch
+## 🏃‍♂️ Запуск приложения
 
-1. В Xcode выберите схему "MindFlowWatch"
-2. Убедитесь, что WatchKit App Bundle ID настроен
-3. Добавьте Watch App в основной проект
-
-## Запуск приложения
-
-### iOS Simulator
-
-```bash
-npm run ios
-# или
-yarn ios
-```
-
-### Физическое устройство iOS
-
-```bash
-npm run ios -- --device "iPhone Name"
-# или
-yarn ios --device "iPhone Name"
-```
-
-### Metro Bundler (отдельно)
+### Development режим
 
 ```bash
 npm start
-# или
-yarn start
 ```
 
-### Apple Watch Simulator
+или
 
 ```bash
-# Запустите iOS симулятор, затем
-xcrun simctl launch booted com.yourcompany.mindflow.watchkitapp
+expo start
 ```
 
-## Структура проекта
+### iOS
+
+```bash
+npm run ios
+```
+
+или
+
+```bash
+expo run:ios
+```
+
+### Запуск на конкретном симуляторе
+
+```bash
+npm run ios -- --simulator="iPhone 15 Pro"
+```
+
+## 📱 Структура проекта
 
 ```
-mindflow/
-├── App.tsx                          # Корневой компонент
-├── app.json                         # Конфигурация Expo
-├── package.json                     # Зависимости
-├── tsconfig.json                    # TypeScript конфиг
-├── babel.config.js                  # Babel конфиг
-├── metro.config.js                  # Metro bundler конфиг
-│
+mindful-breathing-app/
 ├── src/
-│   ├── navigation/                  # Навигация
-│   │   ├── RootNavigator.tsx
-│   │   └── types.ts
-│   │
-│   ├── screens/                     # Экраны приложения
+│   ├── components/          # Переиспользуемые компоненты
+│   │   ├── EmotionCard.tsx
+│   │   ├── ExerciseCard.tsx
+│   │   ├── HeatmapCalendar.tsx
+│   │   ├── ProgressChart.tsx
+│   │   ├── AchievementBadge.tsx
+│   │   ├── CircularTimer.tsx
+│   │   ├── BiometricIndicator.tsx
+│   │   └── NotificationToggle.tsx
+│   ├── screens/             # Экраны приложения
 │   │   ├── HomeScreen.tsx
 │   │   ├── EmotionSelectionScreen.tsx
-│   │   ├── ExerciseSelectionScreen.tsx
+│   │   ├── ExerciseListScreen.tsx
 │   │   ├── ExerciseSessionScreen.tsx
 │   │   ├── SessionResultScreen.tsx
 │   │   ├── StatisticsScreen.tsx
 │   │   ├── AchievementsScreen.tsx
 │   │   └── SettingsScreen.tsx
-│   │
-│   ├── components/                  # Переиспользуемые компоненты
-│   │   ├── EmotionCard.tsx
-│   │   ├── ExerciseCard.tsx
-│   │   ├── HeatmapCalendar.tsx
-│   │   ├── MiniChart.tsx
-│   │   ├── AchievementBadge.tsx
-│   │   ├── CircularProgress.tsx
-│   │   ├── BiometricIndicator.tsx
-│   │   └── NotificationToggle.tsx
-│   │
-│   ├── services/                    # Бизнес-логика и интеграции
+│   ├── navigation/          # Навигация
+│   │   ├── RootNavigator.tsx
+│   │   └── types.ts
+│   ├── services/            # Бизнес-логика и API
 │   │   ├── HealthKitService.ts
 │   │   ├── NotificationService.ts
-│   │   ├── AudioService.ts
 │   │   ├── StorageService.ts
-│   │   ├── AnalyticsService.ts
-│   │   ├── WatchConnectivityService.ts
+│   │   ├── AudioService.ts
+│   │   ├── StressAnalysisService.ts
+│   │   ├── ExerciseRecommendationService.ts
+│   │   ├── AchievementService.ts
 │   │   └── SharingService.ts
-│   │
-│   ├── hooks/                       # Custom React hooks
+│   ├── hooks/               # Custom React hooks
 │   │   ├── useHealthData.ts
 │   │   ├── useExerciseTimer.ts
 │   │   ├── useStatistics.ts
 │   │   ├── useAchievements.ts
-│   │   ├── useNotifications.ts
 │   │   └── useTheme.ts
-│   │
-│   ├── models/                      # TypeScript модели данных
+│   ├── models/              # TypeScript типы и интерфейсы
 │   │   ├── Emotion.ts
 │   │   ├── Exercise.ts
 │   │   ├── Session.ts
-│   │   ├── BiometricData.ts
 │   │   ├── Achievement.ts
-│   │   ├── Statistics.ts
+│   │   ├── BiometricData.ts
 │   │   └── UserSettings.ts
-│   │
-│   ├── theme/                       # Стилизация
+│   ├── theme/               # Стилизация
 │   │   ├── colors.ts
 │   │   ├── typography.ts
 │   │   ├── spacing.ts
-│   │   └── animations.ts
-│   │
-│   ├── utils/                       # Утилиты
-│   │   ├── dateHelpers.ts
-│   │   ├── stressCalculator.ts
-│   │   ├── exerciseRecommender.ts
-│   │   ├── achievementChecker.ts
-│   │   └── heatmapGenerator.ts
-│   │
-│   └── constants/                   # Константы
-│       ├── exercises.ts
-│       ├── emotions.ts
-│       └── achievements.ts
-│
-├── assets/                          # Медиа ресурсы
-│   ├── audio/
-│   │   ├── breathing-4-7-8.mp3
-│   │   ├── box-breathing.mp3
-│   │   ├── calm-meditation.mp3
-│   │   └── body-scan.mp3
-│   └── images/
-│       ├── icon.png
-│       └── splash.png
-│
-├── ios/                             # iOS нативный код
-│   ├── Podfile
-│   ├── MindFlow/
-│   │   └── Info.plist
-│   └── MindFlow.xcodeproj/
-│
-└── watchOS/                         # Apple Watch приложение
-    └── MindFlowWatch/
-        ├── ContentView.swift
-        ├── ExerciseView.swift
-        └── Info.plist
+│   │   └── theme.ts
+│   └── utils/               # Утилиты
+│       ├── dateHelpers.ts
+│       ├── biometricCalculations.ts
+│       ├── exerciseData.ts
+│       ├── emotionData.ts
+│       ├── achievementDefinitions.ts
+│       └── validators.ts
+├── ios/                     # iOS нативный код
+├── App.tsx                  # Точка входа
+├── app.json                 # Expo конфигурация
+├── package.json
+├── tsconfig.json
+└── README.md
 ```
 
-## Основные команды
+## 🎨 Архитектурные решения
+
+### Навигация
+
+Используется комбинация Stack и Tab навигаторов:
+- **Tab Navigator**: Основная навигация (Главная, Статистика, Достижения, Настройки)
+- **Stack Navigator**: Навигация внутри потоков (выбор эмоции → упражнения → сессия → результат)
+
+### Управление состоянием
+
+- **React Hooks**: useState, useEffect для локального состояния
+- **Custom Hooks**: Инкапсуляция бизнес-логики (useHealthData, useExerciseTimer)
+- **AsyncStorage**: Персистентное хранение данных пользователя
+
+### Сервисы
+
+Модульная архитектура с разделением ответственности:
+- **HealthKitService**: Взаимодействие с биометрическими данными
+- **NotificationService**: Управление уведомлениями
+- **StorageService**: Абстракция над AsyncStorage
+- **StressAnalysisService**: Анализ уровня стресса по биометрике
+- **ExerciseRecommendationService**: Алгоритм рекомендаций
+
+## 📊 Работа с данными
+
+### Биометрические метрики
+
+Приложение отслеживает:
+- **Heart Rate** (пульс): Удары в минуту
+- **HRV** (вариабельность сердечного ритма): Миллисекунды
+- **Stress Level** (уровень стресса): Рассчитывается на основе пульса и HRV
+
+### Формула расчета стресса
+
+```typescript
+const normalizedHR = (heartRate - 60) / (100 - 60);
+const normalizedHRV = 1 - ((hrv - 20) / (100 - 20));
+const stressLevel = (normalizedHR * 0.6 + normalizedHRV * 0.4) * 100;
+```
+
+### Хранение данных
+
+Структура данных в AsyncStorage:
+
+```typescript
+{
+  sessions: Session[],
+  achievements: Achievement[],
+  settings: UserSettings,
+  statistics: {
+    totalSessions: number,
+    totalMinutes: number,
+    currentStreak: number,
+    longestStreak: number
+  }
+}
+```
+
+## 🏆 Система достижений
+
+### Категории достижений
+
+1. **Streak Achievements**: За последовательные дни практики
+2. **Session Count**: За количество завершенных сессий
+3. **Time-based**: За общее время практики
+4. **Variety**: За разнообразие упражнений
+5. **Special**: Уникальные достижения
+
+### Примеры достижений
+
+- 🔥 **First Steps**: Первая завершенная сессия
+- 🌟 **Week Warrior**: 7 дней подряд
+- 🏅 **Century**: 100 завершенных сессий
+- 🎯 **Explorer**: Попробовать все типы упражнений
+
+## 🔔 Система уведомлений
+
+### Типы уведомлений
+
+1. **Daily Reminder**: Ежедневное напоминание о практике
+2. **Streak Alert**: Напоминание о сохранении серии
+3. **Achievement Unlocked**: Уведомление о новом достижении
+
+### Настройка уведомлений
+
+```typescript
+await NotificationService.scheduleDailyReminder({
+  hour: 9,
+  minute: 0,
+  title: "Время для практики 🧘‍♀️",
+  body: "Уделите несколько минут своему благополучию"
+});
+```
+
+## 🎯 Алгоритм рекомендаций
+
+Упражнения рекомендуются на основе:
+
+1. **Выбранная эмоция**: Фильтрация подходящих упражнений
+2. **Уровень стресса**: Приоритет более длинным/коротким упражнениям
+3. **История**: Разнообразие и избегание повторений
+4. **Время суток**: Адаптация к утру/вечеру
+
+```typescript
+const score = 
+  emotionMatch * 0.4 +
+  stressLevelMatch * 0.3 +
+  varietyBonus * 0.2 +
+  timeOfDayMatch * 0.1;
+```
+
+## 🧪 Тестирование
 
 ```bash
-# Запуск в режиме разработки
-npm start
+# Запуск тестов
+npm test
 
-# iOS сборка
-npm run ios
+# Запуск тестов с покрытием
+npm run test:coverage
 
-# Очистка кэша Metro
-npm start -- --reset-cache
-
-# Линтинг
+# Запуск линтера
 npm run lint
 
 # Проверка типов TypeScript
 npm run type-check
-
-# Запуск тестов
-npm test
-
-# Сборка production iOS
-npm run build:ios
-
-# Генерация иконок
-npm run generate-icons
 ```
 
-## Конфигурация
+## 📦 Сборка
 
-### Настройка уведомлений
-
-В `src/services/NotificationService.ts` настройте время напоминаний:
-
-```typescript
-const DEFAULT_REMINDER_TIME = {
-  hour: 20,
-  minute: 0
-};
-```
-
-### Настройка HealthKit метрик
-
-В `src/services/HealthKitService.ts` выберите необходимые метрики:
-
-```typescript
-const HEALTH_METRICS = [
-  'HeartRate',
-  'SleepAnalysis',
-  'StepCount',
-  'MindfulSession'
-];
-```
-
-### Настройка упражнений
-
-Добавьте новые упражнения в `src/constants/exercises.ts`:
-
-```typescript
-export const EXERCISES = [
-  {
-    id: 'new-exercise',
-    name: 'Новое упражнение',
-    duration: 300,
-    audioGuide: 'new-exercise.mp3',
-    // ...
-  }
-];
-```
-
-## Разработка Apple Watch приложения
-
-### Запуск Watch симулятора
+### iOS Production Build
 
 ```bash
-# Откройте Xcode
-open ios/MindFlow.xcworkspace
+# EAS Build (рекомендуется)
+eas build --platform ios --profile production
 
-# Выберите схему MindFlowWatch
-# Выберите Watch симулятор
-# Нажмите Run (Cmd+R)
+# Локальная сборка
+expo build:ios
 ```
 
-### Синхронизация данных
+### Конфигурация App Store
 
-Watch приложение автоматически синхронизируется с iPhone через `WatchConnectivityService`. Убедитесь, что оба устройства в одной сети.
+1. Обновите `app.json`:
+   - `bundleIdentifier`
+   - `version`
+   - `buildNumber`
 
-## Тестирование
+2. Настройте signing в Xcode
 
-### Unit тесты
+3. Загрузите в App Store Connect
 
-```bash
-npm test
-```
+## 🔐 Безопасность
 
-### E2E тесты (Detox)
+- Все биометрические данные хранятся локально
+- Использование Keychain для чувствительных данных (будущая функция)
+- Соблюдение Apple App Store Guidelines
+- GDPR compliance для обработки данных
 
-```bash
-# Установка Detox
-npm install -g detox-cli
+## 🚧 Roadmap
 
-# Сборка для тестирования
-detox build --configuration ios.sim.debug
+### v1.1
+- [ ] Кастомные упражнения
+- [ ] Экспорт данных в PDF
+- [ ] Интеграция с Apple Watch
 
-# Запуск тестов
-detox test --configuration ios.sim.debug
-```
+### v1.2
+- [ ] Социальные функции (друзья, челленджи)
+- [ ] Аудио-гайды для упражнений
+- [ ] Интеграция с Siri Shortcuts
 
-## Сборка для Production
+### v2.0
+- [ ] AI-персонализация
+- [ ] Интеграция с Google Fit (Android)
+- [ ] Web-версия для синхронизации
 
-### iOS App Store
+## 🤝 Вклад в проект
 
-1. Обновите версию в `app.json` и `ios/MindFlow/Info.plist`
-2. Создайте архив в Xcode:
+1. Fork репозитория
+2. Создайте feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit изменения (`git commit -m 'Add some AmazingFeature'`)
+4. Push в branch (`git push origin feature/AmazingFeature`)
+5. Откройте Pull Request
 
-```bash
-# Откройте проект
-open ios/MindFlow.xcworkspace
+### Стандарты кода
 
-# Product -> Archive
-# Validate App
-# Distribute App
-```
+- ESLint конфигурация: Airbnb
+- Prettier для форматирования
+- Conventional Commits для сообщений коммитов
+- TypeScript strict mode
 
-### TestFlight
+## 📄 Лицензия
 
-```bash
-# Загрузка в TestFlight через Xcode
-# Product -> Archive -> Distribute App -> TestFlight
-```
+MIT License - см. файл [LICENSE](LICENSE)
 
-## Troubleshooting
+## 👥 Авторы
 
-### Проблемы с CocoaPods
+- **Your Name** - *Initial work* - [YourGitHub](https://github.com/yourusername)
 
-```bash
-cd ios
-pod deintegrate
-pod cache clean --all
-pod install
-cd ..
-```
+## 🙏 Благодарности
 
-### Проблемы с Metro Bundler
+- [Expo](https://expo.dev/) за отличный фреймворк
+- [React Navigation](https://reactnavigation.org/) за навигацию
+- [react-native-health](https://github.com/agencyenterprise/react-native-health) за HealthKit интеграцию
+- Все контрибьюторы и тестировщики
 
-```bash
-npm start -- --reset-cache
-# или
-rm -rf $TMPDIR/metro-* && npm start
-```
+## 📞 Поддержка
 
-### Проблемы с HealthKit
+- Email: support@mindfulbreathing.app
+- Issues: [GitHub Issues](https://github.com/yourusername/mindful-breathing-app/issues)
+- Документация: [Wiki](https://github.com/yourusername/mindful-breathing-app/wiki)
 
-- Убедитесь, что HealthKit capability добавлен в Xcode
-- Проверьте разрешения в `Info.plist`
-- Тестируйте только на физическом устройстве (симулятор не поддерживает HealthKit)
+## 📈 Статус проекта
 
-### Проблемы с Apple Watch
-
-- Убедитесь, что iPhone и Watch сопряжены
-- Проверьте, что WatchConnectivity активен
-- Перезапустите оба устройства
-
-## Поддержка и вклад
-
-### Сообщить о баге
-
-Создайте issue на GitHub с описанием:
-- Версия приложения
-- Версия iOS/watchOS
-- Модель устройства
-- Шаги для воспроизведения
-- Ожидаемое/фактическое поведение
-
-### Предложить улучшение
-
-Создайте Pull Request с:
-- Описанием изменений
-- Скриншотами (если применимо)
-- Тестами
-- Обновленной документацией
-
-## Лицензия
-
-MIT License - см. файл LICENSE
-
-## Контакты
-
-- Email: support@mindflow.app
-- Website: https://mindflow.app
-- Twitter: @mindflowapp
-
-## Благодарности
-
-- React Native Community
-- Apple Health Team
-- Contributors и тестировщики
+![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
+![Version](https://img.shields.io/badge/version-1.0.0-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+![Platform](https://img.shields.io/badge/platform-iOS-lightgrey)
 
 ---
 
-Создано с ❤️ командой MindFlow
+**Mindful Breathing** - Ваш путь к эмоциональному благополучию 🧘‍♀️✨
