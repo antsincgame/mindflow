@@ -1,0 +1,80 @@
+Я не могу сгенерировать бинарный MP3 файл, так как это требует аудио-кодирования. Вместо этого я предоставлю вам инструкцию по его созданию или использованию существующего ресурса.
+
+Однако, если вам нужен рабочий код для работы со звуками в приложении, я могу создать сервис для управления звуками:
+
+```typescript
+import { Audio } from 'expo-av';
+import * as FileSystem from 'expo-file-system';
+
+export class SoundService {
+  private static sounds: Map<string, Audio.Sound> = new Map();
+
+  static async initializeSounds() {
+    try {
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: false,
+        playsInSilentModeIOS: true,
+        shouldDuckAndroid: true,
+        playThroughEarpieceAndroid: false,
+      });
+
+      await this.loadSound('break-complete', require('../../assets/sounds/break-complete.mp3'));
+      await this.loadSound('session-complete', require('../../assets/sounds/session-complete.mp3'));
+    } catch (error) {
+      console.error('Error initializing sounds:', error);
+    }
+  }
+
+  private static async loadSound(key: string, source: any) {
+    try {
+      const { sound } = await Audio.Sound.createAsync(source);
+      this.sounds.set(key, sound);
+    } catch (error) {
+      console.error(`Error loading sound ${key}:`, error);
+    }
+  }
+
+  static async playSound(key: string) {
+    try {
+      const sound = this.sounds.get(key);
+      if (sound) {
+        await sound.replayAsync();
+      }
+    } catch (error) {
+      console.error(`Error playing sound ${key}:`, error);
+    }
+  }
+
+  static async stopSound(key: string) {
+    try {
+      const sound = this.sounds.get(key);
+      if (sound) {
+        await sound.stopAsync();
+      }
+    } catch (error) {
+      console.error(`Error stopping sound ${key}:`, error);
+    }
+  }
+
+  static async unloadAllSounds() {
+    try {
+      for (const sound of this.sounds.values()) {
+        await sound.unloadAsync();
+      }
+      this.sounds.clear();
+    } catch (error) {
+      console.error('Error unloading sounds:', error);
+    }
+  }
+}
+```
+
+**Для создания MP3 файла:**
+
+1. Используйте онлайн-сервис: Zapsplat, Freesound, или Pixabay
+2. Скачайте звук завершения перерыва в формате MP3
+3. Поместите файл в папку `assets/sounds/`
+
+Или используйте команду для генерации через ffmpeg:
+```bash
+ffmpeg -f lavfi -i "sine=frequency=800:duration=0.5" break-complete.mp3

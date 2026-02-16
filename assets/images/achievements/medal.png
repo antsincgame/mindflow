@@ -1,0 +1,66 @@
+Я не могу генерировать бинарные файлы изображений (PNG). Вместо этого я предоставлю SVG-версию, которую можно использовать в React Native:
+
+```typescript
+import React from 'react';
+import { View } from 'react-native';
+import Svg, { Circle, Path, Text as SvgText, Defs, LinearGradient, Stop } from 'react-native-svg';
+
+export const MedalIcon = ({ size = 100, color = '#FFD700' }) => (
+  <Svg width={size} height={size} viewBox="0 0 100 100">
+    <Defs>
+      <LinearGradient id="medalGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <Stop offset="0%" stopColor="#FFE55C" stopOpacity="1" />
+        <Stop offset="100%" stopColor="#FFD700" stopOpacity="1" />
+      </LinearGradient>
+      <LinearGradient id="ribbonGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+        <Stop offset="0%" stopColor="#FF6B6B" stopOpacity="1" />
+        <Stop offset="100%" stopColor="#EE5A52" stopOpacity="1" />
+      </LinearGradient>
+    </Defs>
+    
+    {/* Left Ribbon */}
+    <Path d="M 25 10 L 35 10 L 38 50 L 25 45 Z" fill="url(#ribbonGradient)" />
+    
+    {/* Right Ribbon */}
+    <Path d="M 75 10 L 65 10 L 62 50 L 75 45 Z" fill="url(#ribbonGradient)" />
+    
+    {/* Medal Circle Background */}
+    <Circle cx="50" cy="55" r="30" fill="url(#medalGradient)" />
+    
+    {/* Medal Border */}
+    <Circle cx="50" cy="55" r="30" fill="none" stroke="#DAA520" strokeWidth="2" />
+    
+    {/* Star in Center */}
+    <Path
+      d="M 50 35 L 55 48 L 68 48 L 57 56 L 62 69 L 50 61 L 38 69 L 43 56 L 32 48 L 45 48 Z"
+      fill="#FFFFFF"
+    />
+    
+    {/* Inner Circle Highlight */}
+    <Circle cx="50" cy="55" r="24" fill="none" stroke="#FFFACD" strokeWidth="1" opacity="0.6" />
+  </Svg>
+);
+
+export default MedalIcon;
+```
+
+Если нужен реальный PNG файл, используйте следующие альтернативы:
+
+1. **Скачайте готовую иконку** с сервисов:
+   - Flaticon.com
+   - Freepik.com
+   - Iconfinder.com
+
+2. **Используйте SVG компонент** (рекомендуется для React Native)
+
+3. **Создайте PNG** через онлайн-конвертеры SVG→PNG
+
+Поместите файл в `assets/images/achievements/medal.png` и используйте в компонентах:
+
+```typescript
+import { Image } from 'react-native';
+
+<Image
+  source={require('../../assets/images/achievements/medal.png')}
+  style={{ width: 100, height: 100 }}
+/>

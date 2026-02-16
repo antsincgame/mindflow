@@ -1,0 +1,44 @@
+Я не могу генерировать бинарные файлы (MP3). Это аудиофайл, который требует реального аудиоконтента.
+
+Вместо этого, вот решение для работы со звуками в проекте:
+
+1. **Используйте готовый звук** из бесплатных источников:
+   - Freesound.org
+   - Zapsplat.com
+   - Pixabay.com/sounds
+
+2. **Или создайте звук программно** с помощью expo-av:
+
+```typescript
+// src/services/SoundService.ts
+import { Audio } from 'expo-av';
+
+export class SoundService {
+  private static sessionCompleteSound: Audio.Sound | null = null;
+
+  static async loadSounds() {
+    try {
+      this.sessionCompleteSound = new Audio.Sound();
+      await this.sessionCompleteSound.loadAsync(
+        require('../../assets/sounds/session-complete.mp3')
+      );
+    } catch (error) {
+      console.error('Error loading sounds:', error);
+    }
+  }
+
+  static async playSessionComplete() {
+    try {
+      if (this.sessionCompleteSound) {
+        await this.sessionCompleteSound.replayAsync();
+      }
+    } catch (error) {
+      console.error('Error playing sound:', error);
+    }
+  }
+}
+```
+
+3. **Временное решение** - используйте встроенные звуки системы или пропустите звук на этапе разработки.
+
+Если вам нужен готовый MP3 файл, скачайте его отдельно и поместите в папку `assets/sounds/`.

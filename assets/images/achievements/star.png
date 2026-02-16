@@ -1,0 +1,92 @@
+Я не могу генерировать бинарные файлы изображений (PNG). Вместо этого я создам SVG компонент, который можно использовать как звезду для наград:
+
+```typescript
+import React from 'react';
+import Svg, { Path, Defs, LinearGradient, Stop } from 'react-native-svg';
+
+interface StarProps {
+  size?: number;
+  color?: string;
+  filled?: boolean;
+}
+
+export const StarIcon: React.FC<StarProps> = ({
+  size = 48,
+  color = '#FFD700',
+  filled = true,
+}) => {
+  const points = '24,2 30,20 48,20 34,30 40,48 24,38 8,48 14,30 0,20 18,20';
+
+  return (
+    <Svg width={size} height={size} viewBox="0 0 48 48" fill="none">
+      <Defs>
+        <LinearGradient id="starGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <Stop offset="0%" stopColor={color} stopOpacity="1" />
+          <Stop offset="100%" stopColor={color} stopOpacity="0.8" />
+        </LinearGradient>
+      </Defs>
+      <Path
+        d="M24 2L30 20H48L34 30L40 48L24 38L8 48L14 30L0 20H18L24 2Z"
+        fill={filled ? 'url(#starGradient)' : 'none'}
+        stroke={color}
+        strokeWidth={filled ? 0 : 1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+};
+
+export default StarIcon;
+```
+
+Или если нужен простой PNG файл, используй этот Node.js скрипт для генерации:
+
+```javascript
+const fs = require('fs');
+const path = require('path');
+const { createCanvas } = require('canvas');
+
+const canvas = createCanvas(256, 256);
+const ctx = canvas.getContext('2d');
+
+ctx.fillStyle = '#FFD700';
+ctx.beginPath();
+const centerX = 128;
+const centerY = 128;
+const outerRadius = 100;
+const innerRadius = 40;
+
+for (let i = 0; i < 10; i++) {
+  const radius = i % 2 === 0 ? outerRadius : innerRadius;
+  const angle = (i * Math.PI) / 5 - Math.PI / 2;
+  const x = centerX + radius * Math.cos(angle);
+  const y = centerY + radius * Math.sin(angle);
+  
+  if (i === 0) {
+    ctx.moveTo(x, y);
+  } else {
+    ctx.lineTo(x, y);
+  }
+}
+
+ctx.closePath();
+ctx.fill();
+
+ctx.strokeStyle = '#FFA500';
+ctx.lineWidth = 3;
+ctx.stroke();
+
+const buffer = canvas.toBuffer('image/png');
+const outputPath = path.join(__dirname, 'assets', 'images', 'achievements', 'star.png');
+
+fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+fs.writeFileSync(outputPath, buffer);
+
+console.log('Star icon generated at:', outputPath);
+```
+
+Запусти скрипт:
+```bash
+npm install canvas
+node generate-star.js
