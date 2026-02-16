@@ -1,498 +1,441 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
-  ScrollView,
-  StyleSheet,
-  Dimensions,
-  TouchableOpacity,
   Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Dimensions,
+  ActivityIndicator,
 } from 'react-native';
-import { LineChart, BarChart } from 'react-native-chart-kit';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, subMonths } from 'date-fns';
 import { useStatistics } from '../hooks/useStatistics';
-import { useAchievements } from '../hooks/useAchievements';
-import StatCard from '../components/StatCard';
-import AchievementBadge from '../components/AchievementBadge';
-import { theme } from '../theme';
-import { format, subDays, startOfDay, endOfDay } from 'date-fns';
-import { ru } from 'date-fns/locale';
+import { useTheme } from '../hooks/useTheme';
+import HeatmapCalendar from '../components/HeatmapCalendar';
+import ProgressChart from '../components/ProgressChart';
+import BiometricIndicator from '../components/BiometricIndicator';
 
-type PeriodType = 'day' | 'week' | 'month';
+const { width } = Dimensions.get('window');
 
-interface DailyStats {
-  date: string;
-  sessions: number;
-  focusTime: number;
-}
+type TimeRange = 'week' | 'month' | 'year';
+type ChartType = 'sessions' | 'duration' | 'emotions' | 'stress';
 
 const StatisticsScreen: React.FC = () => {
-  const [period, setPeriod] = useState<PeriodType>('week');
-  const [chartData, setChartData] = useState<DailyStats[]>([]);
-  const { statistics, getStatisticsByPeriod, getDailyStats } = useStatistics();
-  const { achievements, unlockedCount } = useAchievements();
+  const { theme } = useTheme();
+  const [selectedRange, setSelectedRange] = useState<TimeRange>('month');
+  const [selectedChart, setSelectedChart] = useState<ChartType>('sessions');
+  const { statistics, loading, error, refreshStatistics } = useStatistics(selectedRange);
 
-  useEffect(() => {
-    loadChartData();
-  }, [period]);
+  const timeRanges: { label: string; value: TimeRange }[] = [
+    { label: 'Неделя', value: 'week' },
+    { label: 'Месяц', value: 'month' },
+    { label: 'Год', value: 'year' },
+  ];
 
-  const loadChartData = async () => {
-    try {
-      let days = 7;
-      if (period === 'day') days = 1;
-      if (period === 'month') days = 30;
+  const chartTypes: { label: string; value: ChartType; icon: string }[] = [
+    { label: 'Сессии', value: 'sessions', icon: '📊' },
+    { label: 'Время', value: 'duration', icon: '⏱️' },
+    { label: 'Эмоции', value: 'emotions', icon: '😊' },
+    { label: 'Стресс', value: 'stress', icon: '💓' },
+  ];
 
-      const data: DailyStats[] = [];
-      for (let i = days - 1; i >= 0; i--) {
-        const date = subDays(new Date(), i);
-        const dayStart = startOfDay(date);
-        const dayEnd = endOfDay(date);
-        const dailyData = await getDailyStats(dayStart, dayEnd);
+  const heatmapData = useMemo(() => {
+    if (!statistics?.heatmapData) return [];
+    return statistics.heatmapData;
+  }, [statistics]);
 
-        data.push({
-          date: format(date, 'd MMM', { locale: ru }),
-          sessions: dailyData.sessions || 0,
-          focusTime: Math.round((dailyData.focusTime || 0) / 60),
-        });
-      }
-      setChartData(data);
-    } catch (error) {
-      console.error('Failed to load chart data:', error);
+  const chartData = useMemo(() => {
+    if (!statistics) return null;
+
+    switch (selectedChart) {
+      case 'sessions':
+        return {
+          labels: statistics.chartData.labels,
+          datasets: [
+            {
+              data: statistics.chartData.sessions,
+              color: (opacity = 1) => `rgba(99, 102, 241, ${opacity})`,
+              strokeWidth: 2,
+            },
+          ],
+        };
+      case 'duration':
+        return {
+          labels: statistics.chartData.labels,
+          datasets: [
+            {
+              data: statistics.chartData.duration.map((d) => d / 60),
+              color: (opacity = 1) => `rgba(34, 197, 94, ${opacity})`,
+              strokeWidth: 2,
+            },
+          ],
+        };
+      case 'emotions':
+        return {
+          labels: statistics.emotionDistribution.map((e) => e.emoji),
+          datasets: [
+            {
+              data: statistics.emotionDistribution.map((e) => e.percentage),
+            },
+          ],
+        };
+      case 'stress':
+        return {
+          labels: statistics.chartData.labels,
+          datasets: [
+            {
+              data: statistics.chartData.stressLevel,
+              color: (opacity = 1) => `rgba(239, 68, 68, ${opacity})`,
+              strokeWidth: 2,
+            },
+          ],
+        };
+      default:
+        return null;
     }
-  };
+  }, [statistics, selectedChart]);
 
-  const periodStats = getStatisticsByPeriod(period);
+  const renderStatCard = (
+    title: string,
+    value: string | number,
+    subtitle: string,
+    icon: string,
+    color: string
+  ) => (
+    <View style={[styles.statCard, { backgroundColor: theme.colors.surface }]}>
+      <View style={styles.statCardHeader}>
+        <Text style={styles.statIcon}>{icon}</Text>
+        <View style={styles.statCardContent}>
+          <Text style={[styles.statTitle, { color: theme.colors.textSecondary }]}>
+            {title}
+          </Text>
+          <Text style={[styles.statValue, { color: theme.colors.text }]}>{value}</Text>
+          <Text style={[styles.statSubtitle, { color }]}>{subtitle}</Text>
+        </View>
+      </View>
+    </View>
+  );
 
-  const chartWidth = Dimensions.get('window').width - 32;
+  const renderTimeRangeSelector = () => (
+    <View style={styles.timeRangeContainer}>
+      {timeRanges.map((range) => (
+        <TouchableOpacity
+          key={range.value}
+          style={[
+            styles.timeRangeButton,
+            selectedRange === range.value && {
+              backgroundColor: theme.colors.primary,
+            },
+          ]}
+          onPress={() => setSelectedRange(range.value)}
+        >
+          <Text
+            style={[
+              styles.timeRangeText,
+              {
+                color:
+                  selectedRange === range.value
+                    ? '#FFFFFF'
+                    : theme.colors.textSecondary,
+              },
+            ]}
+          >
+            {range.label}
+          </Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
 
-  const sessionsChartData = {
-    labels: chartData.slice(-7).map((d) => d.date),
-    datasets: [
-      {
-        data: chartData.slice(-7).map((d) => d.sessions),
-        color: () => theme.colors.primary,
-        strokeWidth: 2,
-      },
-    ],
-  };
-
-  const focusTimeChartData = {
-    labels: chartData.slice(-7).map((d) => d.date),
-    datasets: [
-      {
-        data: chartData.slice(-7).map((d) => d.focusTime),
-        color: () => theme.colors.success,
-        strokeWidth: 2,
-      },
-    ],
-  };
-
-  const unlockedAchievements = achievements.filter((a) => a.unlocked);
-
-  return (
+  const renderChartTypeSelector = () => (
     <ScrollView
-      style={styles.container}
-      showsVerticalScrollIndicator={false}
-      contentContainerStyle={styles.contentContainer}
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      style={styles.chartTypeContainer}
+      contentContainerStyle={styles.chartTypeContent}
     >
-      <View style={styles.header}>
-        <Text style={styles.title}>Статистика</Text>
-      </View>
-
-      <View style={styles.periodSelector}>
+      {chartTypes.map((chart) => (
         <TouchableOpacity
+          key={chart.value}
           style={[
-            styles.periodButton,
-            period === 'day' && styles.periodButtonActive,
+            styles.chartTypeButton,
+            {
+              backgroundColor:
+                selectedChart === chart.value
+                  ? theme.colors.primary
+                  : theme.colors.surface,
+            },
           ]}
-          onPress={() => setPeriod('day')}
+          onPress={() => setSelectedChart(chart.value)}
         >
+          <Text style={styles.chartTypeIcon}>{chart.icon}</Text>
           <Text
             style={[
-              styles.periodButtonText,
-              period === 'day' && styles.periodButtonTextActive,
+              styles.chartTypeText,
+              {
+                color:
+                  selectedChart === chart.value
+                    ? '#FFFFFF'
+                    : theme.colors.text,
+              },
             ]}
           >
-            День
+            {chart.label}
           </Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={[
-            styles.periodButton,
-            period === 'week' && styles.periodButtonActive,
-          ]}
-          onPress={() => setPeriod('week')}
-        >
-          <Text
-            style={[
-              styles.periodButtonText,
-              period === 'week' && styles.periodButtonTextActive,
-            ]}
-          >
-            Неделя
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[
-            styles.periodButton,
-            period === 'month' && styles.periodButtonActive,
-          ]}
-          onPress={() => setPeriod('month')}
-        >
-          <Text
-            style={[
-              styles.periodButtonText,
-              period === 'month' && styles.periodButtonTextActive,
-            ]}
-          >
-            Месяц
-          </Text>
-        </TouchableOpacity>
-      </View>
+      ))}
+    </ScrollView>
+  );
 
-      <View style={styles.statsGrid}>
-        <StatCard
-          title="Сессии"
-          value={periodStats.sessions.toString()}
-          icon="🎯"
-          color={theme.colors.primary}
-        />
-        <StatCard
-          title="Время фокуса"
-          value={`${Math.round(periodStats.focusTime / 60)}ч`}
-          icon="⏱️"
-          color={theme.colors.success}
-        />
-        <StatCard
-          title="Перерывы"
-          value={periodStats.breaks.toString()}
-          icon="☕"
-          color={theme.colors.warning}
-        />
-        <StatCard
-          title="Серия дней"
-          value={statistics?.currentStreak?.toString() || '0'}
-          icon="🔥"
-          color={theme.colors.danger}
-        />
-      </View>
+  const renderEmotionDistribution = () => {
+    if (!statistics?.emotionDistribution.length) return null;
 
-      <View style={styles.chartSection}>
-        <Text style={styles.chartTitle}>Количество сессий</Text>
-        <View style={styles.chartContainer}>
-          <LineChart
-            data={sessionsChartData}
-            width={chartWidth}
-            height={220}
-            chartConfig={{
-              backgroundColor: theme.colors.background,
-              backgroundGradientFrom: theme.colors.background,
-              backgroundGradientTo: theme.colors.background,
-              color: () => theme.colors.primary,
-              labelColor: () => theme.colors.text,
-              style: {
-                borderRadius: 16,
-              },
-              propsForDots: {
-                r: '5',
-                strokeWidth: '2',
-                stroke: theme.colors.primary,
-              },
-            }}
-            bezier
-            style={styles.chart}
-          />
-        </View>
-      </View>
-
-      <View style={styles.chartSection}>
-        <Text style={styles.chartTitle}>Время фокуса (часы)</Text>
-        <View style={styles.chartContainer}>
-          <LineChart
-            data={focusTimeChartData}
-            width={chartWidth}
-            height={220}
-            chartConfig={{
-              backgroundColor: theme.colors.background,
-              backgroundGradientFrom: theme.colors.background,
-              backgroundGradientTo: theme.colors.background,
-              color: () => theme.colors.success,
-              labelColor: () => theme.colors.text,
-              style: {
-                borderRadius: 16,
-              },
-              propsForDots: {
-                r: '5',
-                strokeWidth: '2',
-                stroke: theme.colors.success,
-              },
-            }}
-            bezier
-            style={styles.chart}
-          />
-        </View>
-      </View>
-
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Награды</Text>
-          <Text style={styles.badgeCount}>
-            {unlockedCount} из {achievements.length}
-          </Text>
-        </View>
-
-        <View style={styles.achievementsGrid}>
-          {achievements.map((achievement) => (
-            <AchievementBadge
-              key={achievement.id}
-              achievement={achievement}
-              unlocked={achievement.unlocked}
-            />
+    return (
+      <View style={[styles.section, { backgroundColor: theme.colors.surface }]}>
+        <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
+          Распределение эмоций
+        </Text>
+        <View style={styles.emotionGrid}>
+          {statistics.emotionDistribution.map((emotion, index) => (
+            <View key={index} style={styles.emotionItem}>
+              <Text style={styles.emotionEmoji}>{emotion.emoji}</Text>
+              <Text style={[styles.emotionName, { color: theme.colors.text }]}>
+                {emotion.name}
+              </Text>
+              <Text style={[styles.emotionPercentage, { color: theme.colors.primary }]}>
+                {emotion.percentage}%
+              </Text>
+              <Text style={[styles.emotionCount, { color: theme.colors.textSecondary }]}>
+                {emotion.count} сессий
+              </Text>
+            </View>
           ))}
         </View>
       </View>
+    );
+  };
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Уровень и звезды</Text>
-        <View style={styles.levelCard}>
-          <View style={styles.levelInfo}>
-            <Text style={styles.levelLabel}>Уровень</Text>
-            <Text style={styles.levelValue}>{statistics?.level || 1}</Text>
+  const renderStreakInfo = () => {
+    if (!statistics) return null;
+
+    return (
+      <View style={[styles.section, { backgroundColor: theme.colors.surface }]}>
+        <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
+          Серии практик
+        </Text>
+        <View style={styles.streakContainer}>
+          <View style={styles.streakItem}>
+            <Text style={styles.streakIcon}>🔥</Text>
+            <Text style={[styles.streakValue, { color: theme.colors.text }]}>
+              {statistics.currentStreak}
+            </Text>
+            <Text style={[styles.streakLabel, { color: theme.colors.textSecondary }]}>
+              Текущая серия
+            </Text>
           </View>
-          <View style={styles.divider} />
-          <View style={styles.levelInfo}>
-            <Text style={styles.levelLabel}>Звезды</Text>
-            <Text style={styles.starValue}>⭐ {statistics?.stars || 0}</Text>
+          <View style={styles.streakDivider} />
+          <View style={styles.streakItem}>
+            <Text style={styles.streakIcon}>🏆</Text>
+            <Text style={[styles.streakValue, { color: theme.colors.text }]}>
+              {statistics.longestStreak}
+            </Text>
+            <Text style={[styles.streakLabel, { color: theme.colors.textSecondary }]}>
+              Лучшая серия
+            </Text>
           </View>
         </View>
+      </View>
+    );
+  };
 
-        <View style={styles.progressContainer}>
-          <Text style={styles.progressLabel}>Прогресс к следующему уровню</Text>
-          <View style={styles.progressBar}>
-            <View
-              style={[
-                styles.progressFill,
-                {
-                  width: `${((statistics?.stars || 0) % 10) * 10}%`,
-                },
-              ]}
-            />
-          </View>
-          <Text style={styles.progressText}>
-            {(statistics?.stars || 0) % 10} из 10 звезд
+  const renderBiometrics = () => {
+    if (!statistics?.averageBiometrics) return null;
+
+    const { heartRate, hrv, restingHeartRate } = statistics.averageBiometrics;
+
+    return (
+      <View style={[styles.section, { backgroundColor: theme.colors.surface }]}>
+        <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
+          Средние показатели
+        </Text>
+        <View style={styles.biometricsContainer}>
+          <BiometricIndicator
+            label="Пульс"
+            value={heartRate}
+            unit="bpm"
+            icon="💓"
+            color="#EF4444"
+          />
+          <BiometricIndicator
+            label="HRV"
+            value={hrv}
+            unit="ms"
+            icon="📊"
+            color="#8B5CF6"
+          />
+          <BiometricIndicator
+            label="Покой"
+            value={restingHeartRate}
+            unit="bpm"
+            icon="😌"
+            color="#22C55E"
+          />
+        </View>
+      </View>
+    );
+  };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Text style={[styles.loadingText, { color: theme.colors.textSecondary }]}>
+            Загрузка статистики...
           </Text>
         </View>
-      </View>
+      </SafeAreaView>
+    );
+  }
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Лучшие показатели</Text>
-        <View style={styles.recordsContainer}>
-          <View style={styles.recordItem}>
-            <Text style={styles.recordLabel}>Лучшая серия</Text>
-            <Text style={styles.recordValue}>
-              {statistics?.bestStreak || 0} дней
-            </Text>
-          </View>
-          <View style={styles.recordItem}>
-            <Text style={styles.recordLabel}>Всего сессий</Text>
-            <Text style={styles.recordValue}>
-              {statistics?.totalSessions || 0}
-            </Text>
-          </View>
-          <View style={styles.recordItem}>
-            <Text style={styles.recordLabel}>Всего часов</Text>
-            <Text style={styles.recordValue}>
-              {Math.round((statistics?.totalFocusTime || 0) / 3600)}
-            </Text>
-          </View>
+  if (error) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorIcon}>⚠️</Text>
+          <Text style={[styles.errorText, { color: theme.colors.text }]}>{error}</Text>
+          <TouchableOpacity
+            style={[styles.retryButton, { backgroundColor: theme.colors.primary }]}
+            onPress={refreshStatistics}
+          >
+            <Text style={styles.retryButtonText}>Повторить</Text>
+          </TouchableOpacity>
         </View>
-      </View>
+      </SafeAreaView>
+    );
+  }
 
-      <View style={styles.bottomSpacer} />
-    </ScrollView>
+  if (!statistics) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyIcon}>📊</Text>
+          <Text style={[styles.emptyText, { color: theme.colors.text }]}>
+            Нет данных для отображения
+          </Text>
+          <Text style={[styles.emptySubtext, { color: theme.colors.textSecondary }]}>
+            Начните выполнять упражнения, чтобы увидеть статистику
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <LinearGradient
+        colors={[theme.colors.primary + '20', theme.colors.background]}
+        style={styles.gradient}
+      >
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.header}>
+            <Text style={[styles.title, { color: theme.colors.text }]}>Статистика</Text>
+            <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]}>
+              Ваш прогресс за {selectedRange === 'week' ? 'неделю' : selectedRange === 'month' ? 'месяц' : 'год'}
+            </Text>
+          </View>
+
+          {renderTimeRangeSelector()}
+
+          <View style={styles.statsGrid}>
+            {renderStatCard(
+              'Всего сессий',
+              statistics.totalSessions,
+              `+${statistics.sessionsChange}% к прошлому периоду`,
+              '🎯',
+              statistics.sessionsChange >= 0 ? '#22C55E' : '#EF4444'
+            )}
+            {renderStatCard(
+              'Общее время',
+              `${Math.floor(statistics.totalDuration / 60)} мин`,
+              `${statistics.totalDuration % 60} секунд`,
+              '⏱️',
+              theme.colors.primary
+            )}
+            {renderStatCard(
+              'Средний стресс',
+              statistics.averageStressLevel.toFixed(1),
+              `${statistics.stressReduction}% снижение`,
+              '💓',
+              statistics.stressReduction >= 0 ? '#22C55E' : '#EF4444'
+            )}
+            {renderStatCard(
+              'Уровень практики',
+              statistics.practiceLevel,
+              `${statistics.completionRate}% завершено`,
+              '⭐',
+              '#F59E0B'
+            )}
+          </View>
+
+          <View style={[styles.section, { backgroundColor: theme.colors.surface }]}>
+            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
+              Тепловая карта активности
+            </Text>
+            <HeatmapCalendar data={heatmapData} />
+          </View>
+
+          {renderStreakInfo()}
+
+          <View style={[styles.section, { backgroundColor: theme.colors.surface }]}>
+            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
+              Графики прогресса
+            </Text>
+            {renderChartTypeSelector()}
+            {chartData && (
+              <View style={styles.chartContainer}>
+                <ProgressChart
+                  data={chartData}
+                  type={selectedChart === 'emotions' ? 'pie' : 'line'}
+                  height={220}
+                />
+              </View>
+            )}
+          </View>
+
+          {renderEmotionDistribution()}
+
+          {renderBiometrics()}
+
+          <View style={styles.bottomSpacing} />
+        </ScrollView>
+      </LinearGradient>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
   },
-  contentContainer: {
-    paddingBottom: 32,
+  gradient: {
+    flex: 1,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 24,
   },
   header: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingTop: 16,
-    paddingBottom: 8,
+    paddingBottom: 24,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: theme.colors.text,
-    fontFamily: theme.typography.fontFamily,
-  },
-  periodSelector: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    marginVertical: 16,
-    gap: 8,
-  },
-  periodButton: {
-    flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    backgroundColor: theme.colors.surface,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    alignItems: 'center',
-  },
-  periodButtonActive: {
-    backgroundColor: theme.colors.primary,
-    borderColor: theme.colors.primary,
-  },
-  periodButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: theme.colors.textSecondary,
-    fontFamily: theme.typography.fontFamily,
-  },
-  periodButtonTextActive: {
-    color: '#FFFFFF',
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: 16,
-    marginBottom: 24,
-    gap: 12,
-  },
-  chartSection: {
-    marginBottom: 24,
-    paddingHorizontal: 16,
-  },
-  chartTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: theme.colors.text,
-    marginBottom: 12,
-    fontFamily: theme.typography.fontFamily,
-  },
-  chartContainer: {
-    borderRadius: 16,
-    overflow: 'hidden',
-    backgroundColor: theme.colors.surface,
-    paddingVertical: 8,
-  },
-  chart: {
-    borderRadius: 16,
-  },
-  section: {
-    paddingHorizontal: 16,
-    marginBottom: 24,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: theme.colors.text,
-    fontFamily: theme.typography.fontFamily,
-  },
-  badgeCount: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: theme.colors.textSecondary,
-    fontFamily: theme.typography.fontFamily,
-  },
-  achievementsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  levelCard: {
-    flexDirection: 'row',
-    backgroundColor: theme.colors.surface,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
-  levelInfo: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  levelLabel: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: theme.colors.textSecondary,
-    marginBottom: 8,
-    fontFamily: theme.typography.fontFamily,
-  },
-  levelValue: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: theme.colors.primary,
-    fontFamily: theme.typography.fontFamily,
-  },
-  starValue: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: theme.colors.warning,
-    fontFamily: theme.typography.fontFamily,
-  },
-  divider: {
-    width: 1,
-    backgroundColor: theme.colors.border,
-    marginHorizontal: 16,
-  },
-  progressContainer: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
-  progressLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: theme.colors.text,
-    marginBottom: 12,
-    fontFamily: theme.typography.fontFamily,
-  },
-  progressBar: {
-    height: 8,
-    backgroundColor: theme.colors.border,
-    borderRadius: 4,
-    overflow: 'hidden',
-    marginBottom: 8,
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: theme.colors.primary,
-    borderRadius: 4,
-  },
-  progressText: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: theme.colors.textSecondary,
-    fontFamily: theme.typography.fontFamily,
-  },
-  recordsContainer: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  recordItem: {
-    flex: 1,
-    backgroundColor: theme.colors.surface,
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
-  recordLabel:

@@ -1,0 +1,47 @@
+# ОШИБКА: Невозможно сгенерировать бинарный аудио-файл
+
+Я не могу сгенерировать MP3 файл, так как это бинарный формат. Вместо этого предоставляю альтернативные решения:
+
+## Вариант 1: Использовать Text-to-Speech в runtime
+
+```typescript
+// src/services/AudioService.ts - добавить метод
+import * as Speech from 'expo-speech';
+
+export const generate478BreathingAudio = async () => {
+  const script = [
+    { text: "Начинаем упражнение 4-7-8", pause: 1000 },
+    { text: "Вдох через нос на 4 счета", pause: 4000 },
+    { text: "Задержите дыхание на 7 счетов", pause: 7000 },
+    { text: "Выдох через рот на 8 счетов", pause: 8000 },
+  ];
+  
+  for (const step of script) {
+    await Speech.speak(step.text, { language: 'ru-RU' });
+    await new Promise(resolve => setTimeout(resolve, step.pause));
+  }
+};
+```
+
+## Вариант 2: Ссылка на готовые аудио-файлы
+
+Используйте бесплатные источники:
+- **Freesound.org** - meditation/breathing sounds
+- **Pixabay Audio** - royalty-free meditation tracks
+- **YouTube Audio Library** - wellness category
+
+## Вариант 3: Создать самостоятельно
+
+Инструменты для создания:
+1. **Audacity** (бесплатно) + запись голоса
+2. **GarageBand** (Mac/iOS)
+3. **Online TTS** → конвертировать в MP3
+
+## Рекомендация
+
+Добавьте в `package.json`:
+```json
+"expo-speech": "~11.7.0"
+```
+
+И используйте динамическую генерацию аудио-гидов вместо статичных MP3 файлов.

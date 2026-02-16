@@ -1,84 +1,79 @@
 import React, { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import * as SplashScreen from 'expo-splash-screen';
-import * as Notifications from 'expo-notifications';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
-import { AppNavigator } from './src/navigation/AppNavigator';
-import { useDatabase } from './src/hooks/useDatabase';
-import { useNotifications } from './src/hooks/useNotifications';
-import { AppContext } from './src/context/AppContext';
-import { SessionContext } from './src/context/SessionContext';
-import { useSession } from './src/hooks/useSession';
-import { useSettings } from './src/hooks/useSettings';
-import { useStatistics } from './src/hooks/useStatistics';
-import { useAchievements } from './src/hooks/useAchievements';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { StyleSheet, View, ActivityIndicator } from 'react-native';
+import * as Notifications from 'expo-notifications';
 
-SplashScreen.preventAutoHideAsync();
+import RootNavigator from './src/navigation/RootNavigator';
+import { ThemeProvider } from './src/contexts/ThemeContext';
+import { NotificationService } from './src/services/NotificationService';
+import { StorageService } from './src/services/StorageService';
+import { HealthKitService } from './src/services/HealthKitService';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
     shouldPlaySound: true,
-    shouldSetBadge: true,
+    shouldSetBadge: false,
   }),
 });
 
-const AppContent: React.FC = () => {
-  const [appReady, setAppReady] = useState(false);
-  const { isInitialized: dbInitialized } = useDatabase();
-  const { requestPermissions } = useNotifications();
-  const { settings } = useSettings();
-  const { statistics } = useStatistics();
-  const { achievements } = useAchievements();
-  const sessionState = useSession();
+export default function App() {
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    const initializeApp = async () => {
-      try {
-        await requestPermissions();
-        
-        if (dbInitialized) {
-          setAppReady(true);
-          await SplashScreen.hideAsync();
-        }
-      } catch (error) {
-        console.error('Error initializing app:', error);
-        setAppReady(true);
-        await SplashScreen.hideAsync();
+    initializeApp();
+  }, []);
+
+  const initializeApp = async () => {
+    try {
+      await StorageService.initialize();
+      await NotificationService.initialize();
+      
+      const healthKitAvailable = await HealthKitService.isAvailable();
+      if (healthKitAvailable) {
+        await HealthKitService.requestAuthorization();
       }
-    };
 
-    if (dbInitialized) {
-      initializeApp();
+      setIsReady(true);
+    } catch (error) {
+      console.error('Failed to initialize app:', error);
+      setIsReady(true);
     }
-  }, [dbInitialized, requestPermissions]);
+  };
 
-  if (!appReady) {
-    return null;
+  if (!isReady) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#6366F1" />
+      </View>
+    );
   }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={styles.container}>
       <SafeAreaProvider>
-        <AppContext.Provider
-          value={{
-            settings,
-            statistics,
-            achievements,
-          }}
-        >
-          <SessionContext.Provider value={sessionState}>
-            <NavigationContainer>
-              <AppNavigator />
-            </NavigationContainer>
-            <StatusBar barStyle="light-content" />
-          </SessionContext.Provider>
-        </AppContext.Provider>
+        <ThemeProvider>
+          <NavigationContainer>
+            <RootNavigator />
+            <StatusBar style="auto" />
+          </NavigationContainer>
+        </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
-};
+}
 
-export default AppContent;
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+});

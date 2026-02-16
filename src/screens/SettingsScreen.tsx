@@ -1,400 +1,418 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
-  ScrollView,
+  Text,
   StyleSheet,
+  ScrollView,
   Switch,
+  TouchableOpacity,
   Alert,
-  Dimensions,
+  Platform,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useSettings } from '../hooks/useSettings';
-import { useDatabase } from '../hooks/useDatabase';
-import SettingItem from '../components/SettingItem';
-import { colors } from '../theme/colors';
-import { spacing } from '../theme/spacing';
-import { typography } from '../theme/typography';
-import { Text } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTheme } from '../hooks/useTheme';
+import { StorageService } from '../services/StorageService';
+import { NotificationService } from '../services/NotificationService';
+import { HealthKitService } from '../services/HealthKitService';
+import { UserSettings } from '../models/UserSettings';
+import * as Haptics from 'expo-haptics';
 
-const { width } = Dimensions.get('window');
+export const SettingsScreen: React.FC = () => {
+  const { theme, isDark, toggleTheme } = useTheme();
+  const [settings, setSettings] = useState<UserSettings>({
+    notificationsEnabled: false,
+    dailyReminderTime: '09:00',
+    healthKitEnabled: false,
+    hapticFeedbackEnabled: true,
+    darkModeEnabled: false,
+    exerciseDuration: 5,
+    autoPlayAudio: true,
+    shareProgressEnabled: false,
+  });
 
-interface SettingsScreenProps {
-  navigation: any;
-}
-
-const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
-  const insets = useSafeAreaInsets();
-  const { settings, updateSettings, loading } = useSettings();
-  const { resetDatabase } = useDatabase();
-
-  const [sessionDuration, setSessionDuration] = useState(15);
-  const [breakDuration, setBreakDuration] = useState(5);
-  const [dailyGoal, setDailyGoal] = useState(5);
-  const [soundEnabled, setSoundEnabled] = useState(true);
-  const [vibrationEnabled, setVibrationEnabled] = useState(true);
-  const [notificationsBlocked, setNotificationsBlocked] = useState(true);
-  const [workStartTime, setWorkStartTime] = useState('09:00');
-  const [workEndTime, setWorkEndTime] = useState('17:00');
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (settings) {
-      setSessionDuration(settings.sessionDuration);
-      setBreakDuration(settings.breakDuration);
-      setDailyGoal(settings.dailyGoal);
-      setSoundEnabled(settings.soundEnabled);
-      setVibrationEnabled(settings.vibrationEnabled);
-      setNotificationsBlocked(settings.notificationsBlocked);
-      setWorkStartTime(settings.workStartTime);
-      setWorkEndTime(settings.workEndTime);
-    }
-  }, [settings]);
+    loadSettings();
+  }, []);
 
-  const handleSessionDurationChange = (value: number) => {
-    if (value >= 1 && value <= 120) {
-      setSessionDuration(value);
-      updateSettings({ sessionDuration: value });
+  const loadSettings = async () => {
+    try {
+      const savedSettings = await StorageService.getSettings();
+      if (savedSettings) {
+        setSettings(savedSettings);
+      }
+    } catch (error) {
+      console.error('Error loading settings:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleBreakDurationChange = (value: number) => {
-    if (value >= 1 && value <= 60) {
-      setBreakDuration(value);
-      updateSettings({ breakDuration: value });
+  const saveSettings = async (newSettings: UserSettings) => {
+    try {
+      await StorageService.saveSettings(newSettings);
+      setSettings(newSettings);
+      if (settings.hapticFeedbackEnabled) {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      Alert.alert('Ошибка', 'Не удалось сохранить настройки');
     }
   };
 
-  const handleDailyGoalChange = (value: number) => {
-    if (value >= 1 && value <= 50) {
-      setDailyGoal(value);
-      updateSettings({ dailyGoal: value });
+  const handleNotificationsToggle = async (value: boolean) => {
+    if (value) {
+      const hasPermission = await NotificationService.requestPermissions();
+      if (!hasPermission) {
+        Alert.alert(
+          'Требуется разрешение',
+          'Пожалуйста, разрешите уведомления в настройках устройства'
+        );
+        return;
+      }
+      await NotificationService.scheduleDailyReminder(settings.dailyReminderTime);
+    } else {
+      await NotificationService.cancelAllNotifications();
     }
+    saveSettings({ ...settings, notificationsEnabled: value });
   };
 
-  const handleSoundToggle = (value: boolean) => {
-    setSoundEnabled(value);
-    updateSettings({ soundEnabled: value });
-  };
-
-  const handleVibrationToggle = (value: boolean) => {
-    setVibrationEnabled(value);
-    updateSettings({ vibrationEnabled: value });
-  };
-
-  const handleNotificationsToggle = (value: boolean) => {
-    setNotificationsBlocked(value);
-    updateSettings({ notificationsBlocked: value });
-  };
-
-  const handleWorkStartTimeChange = (value: string) => {
-    if (/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(value)) {
-      setWorkStartTime(value);
-      updateSettings({ workStartTime: value });
+  const handleHealthKitToggle = async (value: boolean) => {
+    if (value) {
+      const hasPermission = await HealthKitService.requestAuthorization();
+      if (!hasPermission) {
+        Alert.alert(
+          'Требуется разрешение',
+          'Пожалуйста, разрешите доступ к Health в настройках устройства'
+        );
+        return;
+      }
     }
+    saveSettings({ ...settings, healthKitEnabled: value });
   };
 
-  const handleWorkEndTimeChange = (value: string) => {
-    if (/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(value)) {
-      setWorkEndTime(value);
-      updateSettings({ workEndTime: value });
+  const handleDarkModeToggle = (value: boolean) => {
+    toggleTheme();
+    saveSettings({ ...settings, darkModeEnabled: value });
+  };
+
+  const handleHapticToggle = (value: boolean) => {
+    if (value) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     }
+    saveSettings({ ...settings, hapticFeedbackEnabled: value });
   };
 
-  const handleResetData = () => {
+  const handleAutoPlayToggle = (value: boolean) => {
+    saveSettings({ ...settings, autoPlayAudio: value });
+  };
+
+  const handleShareProgressToggle = (value: boolean) => {
+    saveSettings({ ...settings, shareProgressEnabled: value });
+  };
+
+  const handleExerciseDurationChange = (duration: number) => {
+    saveSettings({ ...settings, exerciseDuration: duration });
+  };
+
+  const handleReminderTimePress = () => {
     Alert.alert(
-      'Сброс данных',
-      'Вы уверены, что хотите удалить все данные? Это действие нельзя отменить.',
+      'Время напоминания',
+      'Выберите время для ежедневного напоминания',
       [
-        {
-          text: 'Отмена',
-          onPress: () => {},
-          style: 'cancel',
-        },
+        { text: '09:00', onPress: () => updateReminderTime('09:00') },
+        { text: '12:00', onPress: () => updateReminderTime('12:00') },
+        { text: '18:00', onPress: () => updateReminderTime('18:00') },
+        { text: '21:00', onPress: () => updateReminderTime('21:00') },
+        { text: 'Отмена', style: 'cancel' },
+      ]
+    );
+  };
+
+  const updateReminderTime = async (time: string) => {
+    if (settings.notificationsEnabled) {
+      await NotificationService.cancelAllNotifications();
+      await NotificationService.scheduleDailyReminder(time);
+    }
+    saveSettings({ ...settings, dailyReminderTime: time });
+  };
+
+  const handleClearData = () => {
+    Alert.alert(
+      'Очистить данные',
+      'Вы уверены? Это действие нельзя отменить. Все ваши сессии, статистика и достижения будут удалены.',
+      [
+        { text: 'Отмена', style: 'cancel' },
         {
           text: 'Удалить',
+          style: 'destructive',
           onPress: async () => {
             try {
-              await resetDatabase();
-              Alert.alert('Успешно', 'Все данные были удалены');
+              await StorageService.clearAllData();
+              Alert.alert('Успешно', 'Все данные удалены');
             } catch (error) {
-              Alert.alert('Ошибка', 'Не удалось сбросить данные');
+              Alert.alert('Ошибка', 'Не удалось удалить данные');
             }
           },
-          style: 'destructive',
         },
       ]
     );
   };
 
-  if (loading) {
-    return (
-      <View style={[styles.container, { paddingTop: insets.top }]}>
-        <Text style={styles.loadingText}>Загрузка...</Text>
+  const SettingItem: React.FC<{
+    title: string;
+    subtitle?: string;
+    value?: boolean;
+    onValueChange?: (value: boolean) => void;
+    onPress?: () => void;
+    rightElement?: React.ReactNode;
+  }> = ({ title, subtitle, value, onValueChange, onPress, rightElement }) => (
+    <TouchableOpacity
+      style={[styles.settingItem, { backgroundColor: theme.colors.surface }]}
+      onPress={onPress}
+      disabled={!onPress && !onValueChange}
+      activeOpacity={onPress ? 0.7 : 1}
+    >
+      <View style={styles.settingLeft}>
+        <Text style={[styles.settingTitle, { color: theme.colors.text }]}>
+          {title}
+        </Text>
+        {subtitle && (
+          <Text style={[styles.settingSubtitle, { color: theme.colors.textSecondary }]}>
+            {subtitle}
+          </Text>
+        )}
       </View>
+      {rightElement || (
+        onValueChange && (
+          <Switch
+            value={value}
+            onValueChange={onValueChange}
+            trackColor={{
+              false: theme.colors.border,
+              true: theme.colors.primary,
+            }}
+            thumbColor={Platform.OS === 'ios' ? undefined : theme.colors.surface}
+          />
+        )
+      )}
+    </TouchableOpacity>
+  );
+
+  const SectionHeader: React.FC<{ title: string }> = ({ title }) => (
+    <Text style={[styles.sectionHeader, { color: theme.colors.textSecondary }]}>
+      {title}
+    </Text>
+  );
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        <View style={styles.loadingContainer}>
+          <Text style={[styles.loadingText, { color: theme.colors.text }]}>
+            Загрузка настроек...
+          </Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <ScrollView
-      style={[styles.container, { paddingTop: insets.top }]}
-      contentContainerStyle={styles.contentContainer}
-      showsVerticalScrollIndicator={false}
-    >
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <View style={styles.header}>
-        <Text style={styles.title}>Настройки</Text>
+        <Text style={[styles.headerTitle, { color: theme.colors.text }]}>
+          Настройки
+        </Text>
       </View>
 
-      {/* Сессия и перерывы */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Время сессий</Text>
-        
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        <SectionHeader title="УВЕДОМЛЕНИЯ" />
         <SettingItem
-          label="Длительность сессии"
-          value={sessionDuration}
-          unit="мин"
-          onChangeValue={handleSessionDurationChange}
-          min={1}
-          max={120}
-          step={1}
-          type="number"
+          title="Уведомления"
+          subtitle="Ежедневные напоминания о практике"
+          value={settings.notificationsEnabled}
+          onValueChange={handleNotificationsToggle}
         />
-
-        <SettingItem
-          label="Длительность перерыва"
-          value={breakDuration}
-          unit="мин"
-          onChangeValue={handleBreakDurationChange}
-          min={1}
-          max={60}
-          step={1}
-          type="number"
-        />
-
-        <SettingItem
-          label="Дневная цель"
-          value={dailyGoal}
-          unit="сессий"
-          onChangeValue={handleDailyGoalChange}
-          min={1}
-          max={50}
-          step={1}
-          type="number"
-        />
-      </View>
-
-      {/* Рабочее время */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Рабочее время</Text>
-        
-        <SettingItem
-          label="Начало рабочего дня"
-          value={workStartTime}
-          onChangeValue={handleWorkStartTimeChange}
-          type="time"
-        />
-
-        <SettingItem
-          label="Конец рабочего дня"
-          value={workEndTime}
-          onChangeValue={handleWorkEndTimeChange}
-          type="time"
-        />
-      </View>
-
-      {/* Звук и вибрация */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Уведомления</Text>
-        
-        <View style={styles.settingRow}>
-          <View style={styles.settingContent}>
-            <Text style={styles.settingLabel}>Звуковые уведомления</Text>
-            <Text style={styles.settingDescription}>
-              Воспроизводить звуки при завершении сессий
-            </Text>
-          </View>
-          <Switch
-            value={soundEnabled}
-            onValueChange={handleSoundToggle}
-            trackColor={{ false: colors.gray200, true: colors.primary200 }}
-            thumbColor={soundEnabled ? colors.primary : colors.gray400}
+        {settings.notificationsEnabled && (
+          <SettingItem
+            title="Время напоминания"
+            subtitle={`Ежедневно в ${settings.dailyReminderTime}`}
+            onPress={handleReminderTimePress}
+            rightElement={
+              <Text style={[styles.valueText, { color: theme.colors.primary }]}>
+                {settings.dailyReminderTime}
+              </Text>
+            }
           />
-        </View>
+        )}
 
-        <View style={styles.divider} />
-
-        <View style={styles.settingRow}>
-          <View style={styles.settingContent}>
-            <Text style={styles.settingLabel}>Вибрация</Text>
-            <Text style={styles.settingDescription}>
-              Вибрировать при уведомлениях
-            </Text>
-          </View>
-          <Switch
-            value={vibrationEnabled}
-            onValueChange={handleVibrationToggle}
-            trackColor={{ false: colors.gray200, true: colors.primary200 }}
-            thumbColor={vibrationEnabled ? colors.primary : colors.gray400}
+        <SectionHeader title="БИОМЕТРИЯ" />
+        {Platform.OS === 'ios' && (
+          <SettingItem
+            title="Apple Health"
+            subtitle="Интеграция с данными здоровья"
+            value={settings.healthKitEnabled}
+            onValueChange={handleHealthKitToggle}
           />
-        </View>
+        )}
 
-        <View style={styles.divider} />
+        <SectionHeader title="ИНТЕРФЕЙС" />
+        <SettingItem
+          title="Темная тема"
+          subtitle="Автоматически следовать системным настройкам"
+          value={settings.darkModeEnabled}
+          onValueChange={handleDarkModeToggle}
+        />
+        <SettingItem
+          title="Тактильная обратная связь"
+          subtitle="Вибрация при взаимодействии"
+          value={settings.hapticFeedbackEnabled}
+          onValueChange={handleHapticToggle}
+        />
 
-        <View style={styles.settingRow}>
-          <View style={styles.settingContent}>
-            <Text style={styles.settingLabel}>Блокировка уведомлений</Text>
-            <Text style={styles.settingDescription}>
-              Блокировать уведомления во время сессии
+        <SectionHeader title="УПРАЖНЕНИЯ" />
+        <SettingItem
+          title="Длительность по умолчанию"
+          subtitle={`${settings.exerciseDuration} минут`}
+          onPress={() => {
+            Alert.alert(
+              'Длительность упражнения',
+              'Выберите длительность по умолчанию',
+              [
+                { text: '3 минуты', onPress: () => handleExerciseDurationChange(3) },
+                { text: '5 минут', onPress: () => handleExerciseDurationChange(5) },
+                { text: '7 минут', onPress: () => handleExerciseDurationChange(7) },
+                { text: '10 минут', onPress: () => handleExerciseDurationChange(10) },
+                { text: 'Отмена', style: 'cancel' },
+              ]
+            );
+          }}
+          rightElement={
+            <Text style={[styles.valueText, { color: theme.colors.primary }]}>
+              {settings.exerciseDuration} мин
             </Text>
-          </View>
-          <Switch
-            value={notificationsBlocked}
-            onValueChange={handleNotificationsToggle}
-            trackColor={{ false: colors.gray200, true: colors.primary200 }}
-            thumbColor={notificationsBlocked ? colors.primary : colors.gray400}
-          />
-        </View>
-      </View>
+          }
+        />
+        <SettingItem
+          title="Автовоспроизведение аудио"
+          subtitle="Запускать аудиогид автоматически"
+          value={settings.autoPlayAudio}
+          onValueChange={handleAutoPlayToggle}
+        />
 
-      {/* Опасные действия */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Данные</Text>
-        
-        <View
-          style={[
-            styles.settingRow,
-            { backgroundColor: colors.error50, borderRadius: spacing.md },
-          ]}
+        <SectionHeader title="КОНФИДЕНЦИАЛЬНОСТЬ" />
+        <SettingItem
+          title="Делиться прогрессом"
+          subtitle="Разрешить создание ссылок для шаринга"
+          value={settings.shareProgressEnabled}
+          onValueChange={handleShareProgressToggle}
+        />
+
+        <SectionHeader title="ДАННЫЕ" />
+        <TouchableOpacity
+          style={[styles.dangerButton, { borderColor: theme.colors.error }]}
+          onPress={handleClearData}
         >
-          <View style={styles.settingContent}>
-            <Text style={[styles.settingLabel, { color: colors.error }]}>
-              Сбросить все данные
-            </Text>
-            <Text style={styles.settingDescription}>
-              Удалить все сессии и статистику
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.buttonContainer}>
-          <View style={styles.resetButton}>
-            <Text
-              style={styles.resetButtonText}
-              onPress={handleResetData}
-            >
-              Удалить данные
-            </Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Информация */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Информация</Text>
-        
-        <View style={styles.infoBox}>
-          <Text style={styles.infoText}>
-            <Text style={styles.infoBold}>MindFlow</Text> v1.0.0
+          <Text style={[styles.dangerButtonText, { color: theme.colors.error }]}>
+            Очистить все данные
           </Text>
-          <Text style={styles.infoText}>
-            Приложение для управления временем и повышения продуктивности
+        </TouchableOpacity>
+
+        <View style={styles.footer}>
+          <Text style={[styles.footerText, { color: theme.colors.textSecondary }]}>
+            Версия 1.0.0
+          </Text>
+          <Text style={[styles.footerText, { color: theme.colors.textSecondary }]}>
+            © 2024 Mindful Moments
           </Text>
         </View>
-      </View>
-
-      <View style={{ height: spacing.xl * 2 }} />
-    </ScrollView>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
-  },
-  contentContainer: {
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xl,
   },
   header: {
-    marginBottom: spacing.xl,
-    marginTop: spacing.lg,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
   },
-  title: {
-    fontSize: typography.sizes.h1,
-    fontWeight: typography.weights.bold,
-    color: colors.text,
+  headerTitle: {
+    fontSize: 34,
+    fontWeight: '700',
+    letterSpacing: 0.4,
   },
-  section: {
-    marginBottom: spacing.xl,
+  scrollView: {
+    flex: 1,
   },
-  sectionTitle: {
-    fontSize: typography.sizes.h3,
-    fontWeight: typography.weights.semibold,
-    color: colors.text,
-    marginBottom: spacing.md,
+  sectionHeader: {
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    paddingHorizontal: 20,
+    paddingTop: 24,
+    paddingBottom: 8,
   },
-  settingRow: {
+  settingItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: spacing.md,
-    backgroundColor: colors.surface,
-    paddingHorizontal: spacing.md,
-    borderRadius: spacing.md,
-    marginBottom: spacing.md,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    marginHorizontal: 16,
+    marginVertical: 4,
+    borderRadius: 12,
   },
-  settingContent: {
+  settingLeft: {
     flex: 1,
-    marginRight: spacing.md,
+    marginRight: 12,
   },
-  settingLabel: {
-    fontSize: typography.sizes.body,
-    fontWeight: typography.weights.semibold,
-    color: colors.text,
-    marginBottom: spacing.xs,
+  settingTitle: {
+    fontSize: 17,
+    fontWeight: '500',
+    marginBottom: 2,
   },
-  settingDescription: {
-    fontSize: typography.sizes.caption,
-    color: colors.textSecondary,
+  settingSubtitle: {
+    fontSize: 13,
+    marginTop: 2,
   },
-  divider: {
-    height: 1,
-    backgroundColor: colors.gray200,
-    marginVertical: 0,
+  valueText: {
+    fontSize: 17,
+    fontWeight: '500',
   },
-  buttonContainer: {
-    marginTop: spacing.md,
-  },
-  resetButton: {
-    backgroundColor: colors.error,
-    paddingVertical: spacing.md,
-    borderRadius: spacing.md,
+  dangerButton: {
+    marginHorizontal: 16,
+    marginVertical: 8,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 2,
     alignItems: 'center',
   },
-  resetButtonText: {
-    fontSize: typography.sizes.body,
-    fontWeight: typography.weights.semibold,
-    color: colors.white,
+  dangerButtonText: {
+    fontSize: 17,
+    fontWeight: '600',
   },
-  infoBox: {
-    backgroundColor: colors.surface,
-    padding: spacing.md,
-    borderRadius: spacing.md,
+  footer: {
+    alignItems: 'center',
+    paddingVertical: 32,
+    paddingBottom: 48,
   },
-  infoText: {
-    fontSize: typography.sizes.caption,
-    color: colors.textSecondary,
-    marginBottom: spacing.sm,
+  footerText: {
+    fontSize: 13,
+    marginVertical: 4,
   },
-  infoBold: {
-    fontWeight: typography.weights.bold,
-    color: colors.text,
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   loadingText: {
-    fontSize: typography.sizes.body,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginTop: spacing.xl,
+    fontSize: 17,
+    fontWeight: '500',
   },
 });
-
-export default SettingsScreen;

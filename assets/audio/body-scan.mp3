@@ -1,0 +1,128 @@
+# Body Scan Meditation Audio Guide Script
+
+**Duration: ~10 minutes**
+
+---
+
+## Audio Content (Text-to-Speech Script)
+
+```
+[Soft ambient music begins - 5 seconds]
+
+Welcome to this body scan meditation. Find a comfortable position, either lying down or sitting with your back supported.
+
+[Pause 3 seconds]
+
+Gently close your eyes, or soften your gaze downward. Take a deep breath in through your nose...
+
+[Pause 2 seconds]
+
+And slowly exhale through your mouth.
+
+[Pause 3 seconds]
+
+Let's begin by bringing awareness to your breath. Notice the natural rhythm of your breathing, without trying to change it.
+
+[Pause 5 seconds]
+
+Now, bring your attention to the top of your head. Notice any sensations here... perhaps tingling, warmth, or simply the weight of your head.
+
+[Pause 5 seconds]
+
+Slowly move your awareness down to your forehead. Release any tension you might be holding here. Let your forehead be smooth and relaxed.
+
+[Pause 5 seconds]
+
+Bring awareness to your eyes. Let them rest softly in their sockets. Release any tightness around your eyes.
+
+[Pause 5 seconds]
+
+Notice your jaw. Often we hold tension here without realizing it. Let your jaw relax, teeth slightly apart.
+
+[Pause 5 seconds]
+
+Move your attention to your neck and throat. Notice any sensations here. Breathe into this area, allowing it to soften.
+
+[Pause 5 seconds]
+
+Shift your awareness to your shoulders. This is a common place to hold stress. As you breathe out, imagine your shoulders dropping and releasing.
+
+[Pause 5 seconds]
+
+Bring attention to your upper arms... your elbows... forearms... wrists... and hands. Notice any sensations in your fingertips.
+
+[Pause 7 seconds]
+
+Now focus on your chest. Feel it gently rising and falling with each breath. Notice your heartbeat if you can.
+
+[Pause 5 seconds]
+
+Move awareness to your upper back, middle back, and lower back. Breathe into any areas of tightness or discomfort.
+
+[Pause 7 seconds]
+
+Bring attention to your abdomen. Notice it expanding with each inhale, softening with each exhale.
+
+[Pause 5 seconds]
+
+Shift awareness to your hips and pelvis. Notice the points of contact with the surface beneath you.
+
+[Pause 5 seconds]
+
+Move down to your thighs... notice any sensations here... warmth, coolness, tingling, or pressure.
+
+[Pause 5 seconds]
+
+Bring awareness to your knees... your calves... your ankles... and your feet. Notice your toes, the soles of your feet, the heels.
+
+[Pause 7 seconds]
+
+Now, expand your awareness to include your entire body at once. Feel yourself as a whole, breathing, alive, present.
+
+[Pause 10 seconds]
+
+Take one more deep breath in...
+
+[Pause 2 seconds]
+
+And slowly exhale.
+
+[Pause 3 seconds]
+
+When you're ready, gently wiggle your fingers and toes. Slowly open your eyes.
+
+[Pause 3 seconds]
+
+Thank you for taking this time for yourself.
+
+[Soft ambient music fades out - 5 seconds]
+```
+
+---
+
+## Technical Specifications for MP3 Generation
+
+- **Format**: MP3
+- **Bitrate**: 128 kbps
+- **Sample Rate**: 44.1 kHz
+- **Channels**: Stereo
+- **Duration**: ~10 minutes
+- **Voice**: Calm, soothing female or male voice
+- **Background**: Soft ambient music at -20dB relative to voice
+- **Pace**: Slow, with intentional pauses
+- **Tone**: Warm, gentle, non-judgmental
+
+---
+
+## Production Notes
+
+This is an audio script. The actual MP3 file needs to be produced using:
+1. Text-to-Speech service (e.g., Amazon Polly, Google Cloud TTS, ElevenLabs)
+2. Audio editing software (e.g., Audacity, Adobe Audition)
+3. Royalty-free ambient background music
+4. Proper mixing and mastering
+
+For development/testing purposes, you can:
+- Use a TTS API to generate the voice
+- Add ambient music from free sources (e.g., freesound.org)
+- Export as MP3 with the specifications above

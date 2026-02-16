@@ -2,354 +2,305 @@ import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
-  ScrollView,
   StyleSheet,
+  TouchableOpacity,
+  Animated,
   Dimensions,
-  SafeAreaView,
-  ActivityIndicator,
+  StatusBar,
+  Platform,
 } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
-
-import SessionButton from '../components/SessionButton';
-import ProgressBar from '../components/ProgressBar';
-import MotivationalMessage from '../components/MotivationalMessage';
-import StatCard from '../components/StatCard';
-
-import { useSession } from '../hooks/useSession';
-import { useStatistics } from '../hooks/useStatistics';
-import { useSettings } from '../hooks/useSettings';
-
-import { colors } from '../theme/colors';
-import { typography } from '../theme/typography';
-import { spacing } from '../theme/spacing';
-
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { LinearGradient } from 'expo-linear-gradient';
+import * as Haptics from 'expo-haptics';
 import { RootStackParamList } from '../navigation/types';
+import { useHealthData } from '../hooks/useHealthData';
+import { useStatistics } from '../hooks/useStatistics';
+import { BiometricIndicator } from '../components/BiometricIndicator';
 
-type HomeScreenProps = NativeStackScreenProps<RootStackParamList, 'Home'>;
+type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
-const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
-  const { startSession, isSessionActive } = useSession();
-  const { stats, dailyProgress, loading: statsLoading } = useStatistics();
-  const { settings } = useSettings();
-  const [currentTime, setCurrentTime] = useState<string>('');
+export const HomeScreen: React.FC = () => {
+  const navigation = useNavigation<HomeScreenNavigationProp>();
+  const { heartRate, hrv, isLoading: healthLoading } = useHealthData();
+  const { todaySessionsCount, currentStreak } = useStatistics();
+
+  const [pulseAnim] = useState(new Animated.Value(1));
+  const [fadeAnim] = useState(new Animated.Value(0));
+  const [slideAnim] = useState(new Animated.Value(50));
 
   useEffect(() => {
-    const updateTime = () => {
-      const now = new Date();
-      const hours = String(now.getHours()).padStart(2, '0');
-      const minutes = String(now.getMinutes()).padStart(2, '0');
-      setCurrentTime(`${hours}:${minutes}`);
-    };
+    // Fade in animation
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 800,
+      useNativeDriver: true,
+    }).start();
 
-    updateTime();
-    const interval = setInterval(updateTime, 1000);
+    // Slide up animation
+    Animated.timing(slideAnim, {
+      toValue: 0,
+      duration: 600,
+      useNativeDriver: true,
+    }).start();
 
-    return () => clearInterval(interval);
+    // Pulse animation for main button
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.05,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
   }, []);
 
-  useFocusEffect(
-    React.useCallback(() => {
-      // Refresh stats when screen is focused
-      return () => {};
-    }, [])
-  );
-
-  const handleStartSession = async () => {
-    try {
-      await startSession();
-      navigation.navigate('Session');
-    } catch (error) {
-      console.error('Failed to start session:', error);
-    }
+  const handleEmotionSelect = async () => {
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    navigation.navigate('EmotionSelection');
   };
 
-  const getGreeting = () => {
+  const getGreeting = (): string => {
     const hour = new Date().getHours();
     if (hour < 12) return 'Доброе утро';
     if (hour < 18) return 'Добрый день';
     return 'Добрый вечер';
   };
 
-  const progressPercentage = settings?.daily_goal
-    ? (dailyProgress / settings.daily_goal) * 100
-    : 0;
+  const getMotivationalText = (): string => {
+    if (currentStreak >= 7) {
+      return `Невероятно! ${currentStreak} дней подряд 🔥`;
+    }
+    if (currentStreak >= 3) {
+      return `Отличная серия: ${currentStreak} дня 💪`;
+    }
+    if (todaySessionsCount > 0) {
+      return 'Вы уже занимались сегодня! ✨';
+    }
+    return 'Как вы себя чувствуете?';
+  };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" />
+      <LinearGradient
+        colors={['#667eea', '#764ba2', '#f093fb']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.gradient}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.greeting}>{getGreeting()}! 👋</Text>
-          <Text style={styles.time}>{currentTime}</Text>
-        </View>
-
-        {/* Motivational Message */}
-        <View style={styles.motivationContainer}>
-          <MotivationalMessage />
-        </View>
-
-        {/* Main Session Button */}
-        <View style={styles.buttonContainer}>
-          <SessionButton
-            onPress={handleStartSession}
-            isActive={isSessionActive}
-            disabled={isSessionActive}
-          />
-        </View>
-
-        {/* Daily Progress Section */}
-        <View style={styles.progressSection}>
-          <View style={styles.progressHeader}>
-            <Text style={styles.progressTitle}>Прогресс дня</Text>
-            <Text style={styles.progressCounter}>
-              {Math.round(dailyProgress)} / {settings?.daily_goal || 5} сессий
-            </Text>
+        <Animated.View
+          style={[
+            styles.content,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }],
+            },
+          ]}
+        >
+          {/* Header Section */}
+          <View style={styles.header}>
+            <Text style={styles.greeting}>{getGreeting()}</Text>
+            <Text style={styles.motivationalText}>{getMotivationalText()}</Text>
           </View>
-          <ProgressBar
-            progress={Math.min(progressPercentage, 100)}
-            height={12}
-            backgroundColor={colors.primary}
-            containerStyle={styles.progressBar}
-          />
-          <Text style={styles.progressSubtext}>
-            {progressPercentage >= 100
-              ? '🎉 Вы достигли дневной цели!'
-              : `Осталось ${Math.ceil(
-                  (settings?.daily_goal || 5) - dailyProgress
-                )} сессий`}
-          </Text>
-        </View>
 
-        {/* Statistics Cards */}
-        {statsLoading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={colors.primary} />
-          </View>
-        ) : (
+          {/* Biometric Data Section */}
+          {!healthLoading && (heartRate || hrv) && (
+            <View style={styles.biometricContainer}>
+              {heartRate && (
+                <BiometricIndicator
+                  type="heartRate"
+                  value={heartRate}
+                  label="Пульс"
+                  unit="bpm"
+                />
+              )}
+              {hrv && (
+                <BiometricIndicator
+                  type="hrv"
+                  value={hrv}
+                  label="HRV"
+                  unit="ms"
+                />
+              )}
+            </View>
+          )}
+
+          {/* Main Action Button */}
+          <Animated.View
+            style={[
+              styles.mainButtonContainer,
+              {
+                transform: [{ scale: pulseAnim }],
+              },
+            ]}
+          >
+            <TouchableOpacity
+              style={styles.mainButton}
+              onPress={handleEmotionSelect}
+              activeOpacity={0.9}
+            >
+              <LinearGradient
+                colors={['#ffffff', '#f8f9fa']}
+                style={styles.buttonGradient}
+              >
+                <Text style={styles.mainButtonEmoji}>🎯</Text>
+                <Text style={styles.mainButtonText}>Выбрать эмоцию</Text>
+                <Text style={styles.mainButtonSubtext}>
+                  Начните с определения того, что вы чувствуете
+                </Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </Animated.View>
+
+          {/* Stats Section */}
           <View style={styles.statsContainer}>
-            <Text style={styles.statsTitle}>Сегодня</Text>
-            <View style={styles.statsGrid}>
-              <StatCard
-                title="Сессий"
-                value={stats?.sessions_today || 0}
-                subtitle="выполнено"
-                icon="⏱️"
-              />
-              <StatCard
-                title="Время"
-                value={`${Math.round((stats?.focus_time_today || 0) / 60)}`}
-                subtitle="минут"
-                icon="🎯"
-              />
-              <StatCard
-                title="Серия"
-                value={stats?.current_streak || 0}
-                subtitle="дней"
-                icon="🔥"
-              />
-              <StatCard
-                title="Звезды"
-                value={stats?.stars || 0}
-                subtitle="заработано"
-                icon="⭐"
-              />
+            <View style={styles.statCard}>
+              <Text style={styles.statValue}>{todaySessionsCount}</Text>
+              <Text style={styles.statLabel}>Сегодня</Text>
+            </View>
+            <View style={styles.statCard}>
+              <Text style={styles.statValue}>{currentStreak}</Text>
+              <Text style={styles.statLabel}>Серия дней</Text>
             </View>
           </View>
-        )}
 
-        {/* Quick Stats */}
-        <View style={styles.quickStatsContainer}>
-          <View style={styles.quickStatItem}>
-            <Text style={styles.quickStatLabel}>Уровень</Text>
-            <Text style={styles.quickStatValue}>{stats?.level || 1}</Text>
-          </View>
-          <View style={styles.quickStatDivider} />
-          <View style={styles.quickStatItem}>
-            <Text style={styles.quickStatLabel}>Лучшая серия</Text>
-            <Text style={styles.quickStatValue}>{stats?.best_streak || 0}</Text>
-          </View>
-          <View style={styles.quickStatDivider} />
-          <View style={styles.quickStatItem}>
-            <Text style={styles.quickStatLabel}>Всего сессий</Text>
-            <Text style={styles.quickStatValue}>{stats?.total_sessions || 0}</Text>
-          </View>
-        </View>
-
-        {/* Navigation Hints */}
-        <View style={styles.hintsContainer}>
-          <Text style={styles.hintsTitle}>Советы</Text>
-          <View style={styles.hintItem}>
-            <Text style={styles.hintBullet}>📊</Text>
-            <Text style={styles.hintText}>
-              Проверьте статистику в разделе "Статистика"
+          {/* Quick Tips */}
+          <View style={styles.tipsContainer}>
+            <Text style={styles.tipsTitle}>💡 Совет дня</Text>
+            <Text style={styles.tipsText}>
+              Регулярная практика дыхательных упражнений снижает уровень стресса
+              и улучшает качество сна
             </Text>
           </View>
-          <View style={styles.hintItem}>
-            <Text style={styles.hintBullet}>🏆</Text>
-            <Text style={styles.hintText}>
-              Разблокируйте достижения в разделе "Достижения"
-            </Text>
-          </View>
-          <View style={styles.hintItem}>
-            <Text style={styles.hintBullet}>⚙️</Text>
-            <Text style={styles.hintText}>
-              Настройте параметры в разделе "Настройки"
-            </Text>
-          </View>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+        </Animated.View>
+      </LinearGradient>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
   },
-  scrollView: {
+  gradient: {
     flex: 1,
   },
-  scrollContent: {
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xl,
+  content: {
+    flex: 1,
+    paddingHorizontal: 24,
+    paddingTop: Platform.OS === 'ios' ? 60 : 40,
+    paddingBottom: 40,
   },
   header: {
-    marginTop: spacing.md,
-    marginBottom: spacing.lg,
+    marginBottom: 30,
   },
   greeting: {
-    fontSize: typography.sizes.xxl,
-    fontWeight: typography.weights.bold,
-    color: colors.text.primary,
-    marginBottom: spacing.sm,
+    fontSize: 32,
+    fontWeight: '700',
+    color: '#ffffff',
+    marginBottom: 8,
   },
-  time: {
-    fontSize: typography.sizes.lg,
-    color: colors.text.secondary,
-    fontWeight: typography.weights.semibold,
+  motivationalText: {
+    fontSize: 18,
+    color: '#ffffff',
+    opacity: 0.9,
   },
-  motivationContainer: {
-    marginBottom: spacing.xl,
-  },
-  buttonContainer: {
-    alignItems: 'center',
-    marginVertical: spacing.xl,
-  },
-  progressSection: {
-    backgroundColor: colors.surface,
-    borderRadius: 16,
-    padding: spacing.lg,
-    marginBottom: spacing.lg,
-  },
-  progressHeader: {
+  biometricContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.md,
+    justifyContent: 'space-around',
+    marginBottom: 40,
+    paddingHorizontal: 20,
   },
-  progressTitle: {
-    fontSize: typography.sizes.lg,
-    fontWeight: typography.weights.semibold,
-    color: colors.text.primary,
-  },
-  progressCounter: {
-    fontSize: typography.sizes.sm,
-    color: colors.text.secondary,
-    fontWeight: typography.weights.medium,
-  },
-  progressBar: {
-    marginBottom: spacing.md,
-  },
-  progressSubtext: {
-    fontSize: typography.sizes.sm,
-    color: colors.text.secondary,
-    textAlign: 'center',
-  },
-  statsContainer: {
-    marginBottom: spacing.lg,
-  },
-  statsTitle: {
-    fontSize: typography.sizes.lg,
-    fontWeight: typography.weights.semibold,
-    color: colors.text.primary,
-    marginBottom: spacing.md,
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-  },
-  loadingContainer: {
-    paddingVertical: spacing.xl,
+  mainButtonContainer: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: 40,
   },
-  quickStatsContainer: {
-    flexDirection: 'row',
-    backgroundColor: colors.surface,
-    borderRadius: 16,
-    padding: spacing.lg,
-    marginBottom: spacing.lg,
-    justifyContent: 'space-around',
+  mainButton: {
+    width: width - 48,
+    borderRadius: 24,
+    overflow: 'hidden',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  buttonGradient: {
+    paddingVertical: 40,
+    paddingHorizontal: 32,
     alignItems: 'center',
   },
-  quickStatItem: {
-    flex: 1,
-    alignItems: 'center',
+  mainButtonEmoji: {
+    fontSize: 64,
+    marginBottom: 16,
   },
-  quickStatLabel: {
-    fontSize: typography.sizes.xs,
-    color: colors.text.secondary,
-    marginBottom: spacing.xs,
-    fontWeight: typography.weights.medium,
+  mainButtonText: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#667eea',
+    marginBottom: 8,
   },
-  quickStatValue: {
-    fontSize: typography.sizes.xl,
-    fontWeight: typography.weights.bold,
-    color: colors.primary,
+  mainButtonSubtext: {
+    fontSize: 14,
+    color: '#6c757d',
+    textAlign: 'center',
+    lineHeight: 20,
   },
-  quickStatDivider: {
-    width: 1,
-    height: 40,
-    backgroundColor: colors.border,
-  },
-  hintsContainer: {
-    backgroundColor: colors.surface,
-    borderRadius: 16,
-    padding: spacing.lg,
-    marginBottom: spacing.lg,
-  },
-  hintsTitle: {
-    fontSize: typography.sizes.md,
-    fontWeight: typography.weights.semibold,
-    color: colors.text.primary,
-    marginBottom: spacing.md,
-  },
-  hintItem: {
+  statsContainer: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: spacing.md,
+    justifyContent: 'space-between',
+    marginBottom: 30,
+    gap: 16,
   },
-  hintBullet: {
-    fontSize: typography.sizes.lg,
-    marginRight: spacing.md,
-    marginTop: 2,
-  },
-  hintText: {
+  statCard: {
     flex: 1,
-    fontSize: typography.sizes.sm,
-    color: colors.text.secondary,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 16,
+    padding: 20,
+    alignItems: 'center',
+    backdropFilter: 'blur(10px)',
+  },
+  statValue: {
+    fontSize: 36,
+    fontWeight: '700',
+    color: '#ffffff',
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 14,
+    color: '#ffffff',
+    opacity: 0.8,
+  },
+  tipsContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 16,
+    padding: 20,
+    backdropFilter: 'blur(10px)',
+  },
+  tipsTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#ffffff',
+    marginBottom: 8,
+  },
+  tipsText: {
+    fontSize: 14,
+    color: '#ffffff',
+    opacity: 0.9,
     lineHeight: 20,
   },
 });
-
-export default HomeScreen;

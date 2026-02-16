@@ -1,230 +1,104 @@
 import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
-import { createStackNavigator, CardStyleInterpolators } from '@react-navigation/stack';
+import { Platform, StyleSheet } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Ionicons } from '@expo/vector-icons';
+import { NavigationContainer } from '@react-navigation/native';
+import Icon from 'react-native-vector-icons/Ionicons';
 
-import HomeScreen from '../screens/HomeScreen';
-import SessionScreen from '../screens/SessionScreen';
-import SessionCompleteScreen from '../screens/SessionCompleteScreen';
-import BreakScreen from '../screens/BreakScreen';
+import HomeStackNavigator from './HomeStackNavigator';
 import StatisticsScreen from '../screens/StatisticsScreen';
-import SettingsScreen from '../screens/SettingsScreen';
 import AchievementsScreen from '../screens/AchievementsScreen';
+import SettingsScreen from '../screens/SettingsScreen';
+import { RootTabParamList } from './types';
+import { useTheme } from '../hooks/useTheme';
 
-import { RootStackParamList, HomeTabParamList } from './types';
-import { colors } from '../theme/colors';
-import { spacing } from '../theme/spacing';
+const Tab = createBottomTabNavigator<RootTabParamList>();
 
-const Stack = createStackNavigator<RootStackParamList>();
-const Tab = createBottomTabNavigator<HomeTabParamList>();
+const getTabBarIcon = (routeName: keyof RootTabParamList, focused: boolean, color: string, size: number): React.ReactNode => {
+  let iconName: string;
 
-const HomeStack = () => {
-  return (
-    <Stack.Navigator
-      screenOptions={{
-        headerShown: false,
-        cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
-        animationEnabled: true,
-      }}
-    >
-      <Stack.Screen name="HomeScreen" component={HomeScreen} />
-      <Stack.Screen
-        name="SessionScreen"
-        component={SessionScreen}
-        options={{
-          cardStyle: { backgroundColor: colors.background },
-          animationEnabled: true,
-        }}
-      />
-      <Stack.Screen
-        name="SessionCompleteScreen"
-        component={SessionCompleteScreen}
-        options={{
-          cardStyleInterpolator: CardStyleInterpolators.forFadeFromBottomAndroid,
-          animationEnabled: true,
-        }}
-      />
-      <Stack.Screen
-        name="BreakScreen"
-        component={BreakScreen}
-        options={{
-          cardStyle: { backgroundColor: colors.background },
-          animationEnabled: true,
-        }}
-      />
-    </Stack.Navigator>
-  );
+  switch (routeName) {
+    case 'HomeTab':
+      iconName = focused ? 'home' : 'home-outline';
+      break;
+    case 'StatisticsTab':
+      iconName = focused ? 'stats-chart' : 'stats-chart-outline';
+      break;
+    case 'AchievementsTab':
+      iconName = focused ? 'trophy' : 'trophy-outline';
+      break;
+    case 'SettingsTab':
+      iconName = focused ? 'settings' : 'settings-outline';
+      break;
+    default:
+      iconName = 'ellipse-outline';
+  }
+
+  return <Icon name={iconName} size={size} color={color} />;
 };
 
-const StatisticsStack = () => {
-  return (
-    <Stack.Navigator
-      screenOptions={{
-        headerShown: true,
-        headerStyle: {
-          backgroundColor: colors.primary,
-          elevation: 0,
-          shadowOpacity: 0,
-        },
-        headerTintColor: colors.white,
-        headerTitleStyle: {
-          fontWeight: '600',
-          fontSize: 18,
-        },
-        cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
-      }}
-    >
-      <Stack.Screen
-        name="StatisticsScreen"
-        component={StatisticsScreen}
-        options={{
-          title: 'Статистика',
-          headerShown: true,
-        }}
-      />
-    </Stack.Navigator>
-  );
-};
+const AppNavigator: React.FC = () => {
+  const { colors, isDark } = useTheme();
 
-const AchievementsStack = () => {
-  return (
-    <Stack.Navigator
-      screenOptions={{
-        headerShown: true,
-        headerStyle: {
-          backgroundColor: colors.primary,
-          elevation: 0,
-          shadowOpacity: 0,
-        },
-        headerTintColor: colors.white,
-        headerTitleStyle: {
-          fontWeight: '600',
-          fontSize: 18,
-        },
-        cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
-      }}
-    >
-      <Stack.Screen
-        name="AchievementsScreen"
-        component={AchievementsScreen}
-        options={{
-          title: 'Достижения',
-          headerShown: true,
-        }}
-      />
-    </Stack.Navigator>
-  );
-};
-
-const SettingsStack = () => {
-  return (
-    <Stack.Navigator
-      screenOptions={{
-        headerShown: true,
-        headerStyle: {
-          backgroundColor: colors.primary,
-          elevation: 0,
-          shadowOpacity: 0,
-        },
-        headerTintColor: colors.white,
-        headerTitleStyle: {
-          fontWeight: '600',
-          fontSize: 18,
-        },
-        cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
-      }}
-    >
-      <Stack.Screen
-        name="SettingsScreen"
-        component={SettingsScreen}
-        options={{
-          title: 'Настройки',
-          headerShown: true,
-        }}
-      />
-    </Stack.Navigator>
-  );
-};
-
-const TabNavigator = () => {
-  return (
-    <Tab.Navigator
-      screenOptions={({ route }) => ({
-        headerShown: false,
-        tabBarIcon: ({ focused, color, size }) => {
-          let iconName: keyof typeof Ionicons.glyphMap = 'home';
-
-          if (route.name === 'HomeStackNav') {
-            iconName = focused ? 'home' : 'home-outline';
-          } else if (route.name === 'StatisticsStackNav') {
-            iconName = focused ? 'bar-chart' : 'bar-chart-outline';
-          } else if (route.name === 'AchievementsStackNav') {
-            iconName = focused ? 'trophy' : 'trophy-outline';
-          } else if (route.name === 'SettingsStackNav') {
-            iconName = focused ? 'settings' : 'settings-outline';
-          }
-
-          return <Ionicons name={iconName} size={size} color={color} />;
-        },
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textSecondary,
-        tabBarStyle: {
-          backgroundColor: colors.white,
-          borderTopColor: colors.border,
-          borderTopWidth: 1,
-          height: 60,
-          paddingBottom: 8,
-          paddingTop: 8,
-          elevation: 8,
-          shadowColor: colors.black,
-          shadowOffset: { width: 0, height: -2 },
-          shadowOpacity: 0.1,
-          shadowRadius: 4,
-        },
-        tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: '500',
-          marginTop: 4,
-        },
-      })}
-    >
-      <Tab.Screen
-        name="HomeStackNav"
-        component={HomeStack}
-        options={{
-          title: 'Главная',
-        }}
-      />
-      <Tab.Screen
-        name="StatisticsStackNav"
-        component={StatisticsStack}
-        options={{
-          title: 'Статистика',
-        }}
-      />
-      <Tab.Screen
-        name="AchievementsStackNav"
-        component={AchievementsStack}
-        options={{
-          title: 'Награды',
-        }}
-      />
-      <Tab.Screen
-        name="SettingsStackNav"
-        component={SettingsStack}
-        options={{
-          title: 'Настройки',
-        }}
-      />
-    </Tab.Navigator>
-  );
-};
-
-export const AppNavigator = () => {
   return (
     <NavigationContainer>
-      <TabNavigator />
+      <Tab.Navigator
+        initialRouteName="HomeTab"
+        screenOptions={({ route }) => ({
+          headerShown: false,
+          tabBarIcon: ({ focused, color, size }) =>
+            getTabBarIcon(route.name, focused, color, size),
+          tabBarActiveTintColor: colors.primary,
+          tabBarInactiveTintColor: isDark ? '#8E8E93' : '#A0A0A8',
+          tabBarStyle: {
+            backgroundColor: isDark ? '#1C1C1E' : '#FFFFFF',
+            borderTopColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+            borderTopWidth: StyleSheet.hairlineWidth,
+            paddingTop: 6,
+            paddingBottom: Platform.OS === 'ios' ? 24 : 8,
+            height: Platform.OS === 'ios' ? 88 : 64,
+            elevation: 0,
+            shadowColor: isDark ? '#000000' : '#8E8E93',
+            shadowOffset: { width: 0, height: -2 },
+            shadowOpacity: 0.08,
+            shadowRadius: 8,
+          },
+          tabBarLabelStyle: {
+            fontSize: 11,
+            fontWeight: '500',
+            marginTop: 2,
+          },
+          tabBarHideOnKeyboard: true,
+        })}
+      >
+        <Tab.Screen
+          name="HomeTab"
+          component={HomeStackNavigator}
+          options={{
+            tabBarLabel: 'Главная',
+          }}
+        />
+        <Tab.Screen
+          name="StatisticsTab"
+          component={StatisticsScreen}
+          options={{
+            tabBarLabel: 'Статистика',
+          }}
+        />
+        <Tab.Screen
+          name="AchievementsTab"
+          component={AchievementsScreen}
+          options={{
+            tabBarLabel: 'Достижения',
+          }}
+        />
+        <Tab.Screen
+          name="SettingsTab"
+          component={SettingsScreen}
+          options={{
+            tabBarLabel: 'Настройки',
+          }}
+        />
+      </Tab.Navigator>
     </NavigationContainer>
   );
 };

@@ -1,297 +1,275 @@
 import React, { useEffect, useState } from 'react';
 import {
   View,
-  ScrollView,
-  StyleSheet,
   Text,
+  StyleSheet,
+  ScrollView,
   TouchableOpacity,
   Dimensions,
-  SafeAreaView,
-  FlatList,
-  ListRenderItem,
+  ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as Haptics from 'expo-haptics';
+import AchievementBadge from '../components/AchievementBadge';
 import { useAchievements } from '../hooks/useAchievements';
-import { useStatistics } from '../hooks/useStatistics';
 import { Achievement } from '../models/Achievement';
 import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import { spacing } from '../theme/spacing';
-import { shadows } from '../theme/shadows';
-import { AchievementBadge } from '../components/AchievementBadge';
-import { StatCard } from '../components/StatCard';
 
 const { width } = Dimensions.get('window');
 
-export const AchievementsScreen: React.FC = () => {
-  const { achievements, unlockAchievement } = useAchievements();
-  const { statistics } = useStatistics();
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [filteredAchievements, setFilteredAchievements] = useState<Achievement[]>([]);
+type FilterType = 'all' | 'unlocked' | 'locked';
+
+const AchievementsScreen: React.FC = () => {
+  const {
+    achievements,
+    loading,
+    refreshAchievements,
+    getAchievementProgress,
+    getTotalPoints,
+    getUnlockedCount,
+  } = useAchievements();
+
+  const [filter, setFilter] = useState<FilterType>('all');
+  const [refreshing, setRefreshing] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   useEffect(() => {
-    if (selectedCategory === 'all') {
-      setFilteredAchievements(achievements);
-    } else {
-      setFilteredAchievements(
-        achievements.filter(a => a.type === selectedCategory)
-      );
-    }
-  }, [selectedCategory, achievements]);
+    refreshAchievements();
+  }, []);
 
-  const unlockedCount = achievements.filter(a => a.unlocked).length;
-  const totalCount = achievements.length;
-  const completionPercentage = Math.round((unlockedCount / totalCount) * 100);
-
-  const categories = [
-    { id: 'all', label: 'Все', count: totalCount },
-    { id: 'focus', label: 'Фокус', count: achievements.filter(a => a.type === 'focus').length },
-    { id: 'streak', label: 'Серии', count: achievements.filter(a => a.type === 'streak').length },
-    { id: 'level', label: 'Уровни', count: achievements.filter(a => a.type === 'level').length },
-  ];
-
-  const renderCategoryButton = (category: typeof categories[0]) => (
-    <TouchableOpacity
-      key={category.id}
-      onPress={() => setSelectedCategory(category.id)}
-      style={[
-        styles.categoryButton,
-        selectedCategory === category.id && styles.categoryButtonActive,
-      ]}
-    >
-      <Text
-        style={[
-          styles.categoryButtonText,
-          selectedCategory === category.id && styles.categoryButtonTextActive,
-        ]}
-      >
-        {category.label}
-      </Text>
-      <View
-        style={[
-          styles.categoryBadge,
-          selectedCategory === category.id && styles.categoryBadgeActive,
-        ]}
-      >
-        <Text
-          style={[
-            styles.categoryBadgeText,
-            selectedCategory === category.id && styles.categoryBadgeTextActive,
-          ]}
-        >
-          {category.count}
-        </Text>
-      </View>
-    </TouchableOpacity>
-  );
-
-  const renderAchievementItem: ListRenderItem<Achievement> = ({ item }) => (
-    <AchievementBadge
-      achievement={item}
-      onPress={() => {
-        if (!item.unlocked) {
-          unlockAchievement(item.id);
-        }
-      }}
-    />
-  );
-
-  const getLevelColor = (level: number): string[] => {
-    if (level <= 5) return [colors.primary, colors.secondary];
-    if (level <= 10) return ['#FF6B6B', '#FFE66D'];
-    if (level <= 20) return ['#4ECDC4', '#95E1D3'];
-    return ['#A8E6CF', '#FFD3B6'];
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await refreshAchievements();
+    setRefreshing(false);
   };
 
+  const handleFilterChange = (newFilter: FilterType) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setFilter(newFilter);
+  };
+
+  const handleCategoryChange = (category: string | null) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setSelectedCategory(category);
+  };
+
+  const filteredAchievements = achievements.filter((achievement) => {
+    const matchesFilter =
+      filter === 'all' ||
+      (filter === 'unlocked' && achievement.unlocked) ||
+      (filter === 'locked' && !achievement.unlocked);
+
+    const matchesCategory =
+      !selectedCategory || achievement.category === selectedCategory;
+
+    return matchesFilter && matchesCategory;
+  });
+
+  const categories = Array.from(
+    new Set(achievements.map((a) => a.category))
+  ).sort();
+
+  const totalPoints = getTotalPoints();
+  const unlockedCount = getUnlockedCount();
+  const totalCount = achievements.length;
+  const completionPercentage = totalCount > 0 ? (unlockedCount / totalCount) * 100 : 0;
+
+  if (loading && achievements.length === 0) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={styles.loadingText}>Загрузка достижений...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <LinearGradient
+        colors={[colors.primary, colors.secondary]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.header}
       >
-        {/* Header with Level */}
-        <LinearGradient
-          colors={getLevelColor(statistics?.level || 1)}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.levelCard}
+        <Text style={styles.headerTitle}>Достижения</Text>
+        <View style={styles.statsContainer}>
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>{unlockedCount}/{totalCount}</Text>
+            <Text style={styles.statLabel}>Разблокировано</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>{totalPoints}</Text>
+            <Text style={styles.statLabel}>Очков</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>{completionPercentage.toFixed(0)}%</Text>
+            <Text style={styles.statLabel}>Прогресс</Text>
+          </View>
+        </View>
+        <View style={styles.progressBarContainer}>
+          <View style={styles.progressBarBackground}>
+            <View
+              style={[
+                styles.progressBarFill,
+                { width: `${completionPercentage}%` },
+              ]}
+            />
+          </View>
+        </View>
+      </LinearGradient>
+
+      <View style={styles.filtersContainer}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filtersContent}
         >
-          <View style={styles.levelContent}>
-            <Text style={styles.levelLabel}>Уровень</Text>
-            <Text style={styles.levelNumber}>{statistics?.level || 1}</Text>
-            <Text style={styles.levelTitle}>
-              {getLevelTitle(statistics?.level || 1)}
+          <TouchableOpacity
+            style={[
+              styles.filterButton,
+              filter === 'all' && styles.filterButtonActive,
+            ]}
+            onPress={() => handleFilterChange('all')}
+          >
+            <Text
+              style={[
+                styles.filterButtonText,
+                filter === 'all' && styles.filterButtonTextActive,
+              ]}
+            >
+              Все
             </Text>
-          </View>
-          <View style={styles.starsContainer}>
-            <View style={styles.starBadge}>
-              <Text style={styles.starIcon}>⭐</Text>
-              <Text style={styles.starCount}>{statistics?.stars || 0}</Text>
-            </View>
-          </View>
-        </LinearGradient>
-
-        {/* Progress Overview */}
-        <View style={styles.progressSection}>
-          <View style={styles.progressHeader}>
-            <Text style={styles.progressTitle}>Достижения</Text>
-            <Text style={styles.progressStats}>
-              {unlockedCount} из {totalCount}
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.filterButton,
+              filter === 'unlocked' && styles.filterButtonActive,
+            ]}
+            onPress={() => handleFilterChange('unlocked')}
+          >
+            <Text
+              style={[
+                styles.filterButtonText,
+                filter === 'unlocked' && styles.filterButtonTextActive,
+              ]}
+            >
+              Разблокированные
             </Text>
-          </View>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.filterButton,
+              filter === 'locked' && styles.filterButtonActive,
+            ]}
+            onPress={() => handleFilterChange('locked')}
+          >
+            <Text
+              style={[
+                styles.filterButtonText,
+                filter === 'locked' && styles.filterButtonTextActive,
+              ]}
+            >
+              Заблокированные
+            </Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </View>
 
-          <View style={styles.progressBarContainer}>
-            <View style={styles.progressBarBackground}>
-              <LinearGradient
-                colors={[colors.primary, colors.secondary]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={[
-                  styles.progressBarFill,
-                  { width: `${completionPercentage}%` },
-                ]}
-              />
-            </View>
-            <Text style={styles.progressPercentage}>{completionPercentage}%</Text>
-          </View>
-
-          <View style={styles.milestoneContainer}>
-            {[25, 50, 75, 100].map(milestone => (
-              <View
-                key={milestone}
-                style={[
-                  styles.milestoneMarker,
-                  completionPercentage >= milestone && styles.milestoneMarkerActive,
-                ]}
-              >
-                <Text style={styles.milestoneText}>{milestone}%</Text>
-              </View>
-            ))}
-          </View>
-        </View>
-
-        {/* Stats Cards */}
-        <View style={styles.statsGrid}>
-          <StatCard
-            title="Сессии"
-            value={statistics?.totalSessions || 0}
-            icon="🎯"
-            color={colors.primary}
-          />
-          <StatCard
-            title="Серия"
-            value={statistics?.currentStreak || 0}
-            icon="🔥"
-            color={colors.secondary}
-          />
-          <StatCard
-            title="Лучшая серия"
-            value={statistics?.bestStreak || 0}
-            icon="🏆"
-            color="#FFD700"
-          />
-          <StatCard
-            title="Часов"
-            value={Math.round((statistics?.totalFocusTime || 0) / 60)}
-            icon="⏱️"
-            color="#4ECDC4"
-          />
-        </View>
-
-        {/* Category Filter */}
+      {categories.length > 1 && (
         <View style={styles.categoriesContainer}>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.categoriesList}
+            contentContainerStyle={styles.categoriesContent}
           >
-            {categories.map(renderCategoryButton)}
+            <TouchableOpacity
+              style={[
+                styles.categoryButton,
+                selectedCategory === null && styles.categoryButtonActive,
+              ]}
+              onPress={() => handleCategoryChange(null)}
+            >
+              <Text
+                style={[
+                  styles.categoryButtonText,
+                  selectedCategory === null && styles.categoryButtonTextActive,
+                ]}
+              >
+                Все категории
+              </Text>
+            </TouchableOpacity>
+            {categories.map((category) => (
+              <TouchableOpacity
+                key={category}
+                style={[
+                  styles.categoryButton,
+                  selectedCategory === category && styles.categoryButtonActive,
+                ]}
+                onPress={() => handleCategoryChange(category)}
+              >
+                <Text
+                  style={[
+                    styles.categoryButtonText,
+                    selectedCategory === category &&
+                      styles.categoryButtonTextActive,
+                  ]}
+                >
+                  {category}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </ScrollView>
         </View>
+      )}
 
-        {/* Achievements Grid */}
-        <View style={styles.achievementsContainer}>
-          {filteredAchievements.length > 0 ? (
-            <FlatList
-              data={filteredAchievements}
-              renderItem={renderAchievementItem}
-              keyExtractor={item => item.id}
-              numColumns={2}
-              columnWrapperStyle={styles.achievementRow}
-              scrollEnabled={false}
-              contentContainerStyle={styles.achievementsList}
-            />
-          ) : (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyStateIcon}>🎯</Text>
-              <Text style={styles.emptyStateTitle}>Нет достижений</Text>
-              <Text style={styles.emptyStateText}>
-                В этой категории еще нет достижений
-              </Text>
-            </View>
-          )}
-        </View>
-
-        {/* Next Milestone */}
-        {completionPercentage < 100 && (
-          <View style={styles.nextMilestoneCard}>
-            <View style={styles.nextMilestoneContent}>
-              <Text style={styles.nextMilestoneLabel}>Следующая цель</Text>
-              <Text style={styles.nextMilestoneValue}>
-                {Math.ceil((totalCount * (Math.ceil(completionPercentage / 25) * 25 + 25)) / 100)} достижений
-              </Text>
-              <Text style={styles.nextMilestoneProgress}>
-                Осталось: {Math.ceil((totalCount * (Math.ceil(completionPercentage / 25) * 25 + 25)) / 100) - unlockedCount}
-              </Text>
-            </View>
-            <View style={styles.nextMilestoneIcon}>
-              <Text style={styles.nextMilestoneEmoji}>🎁</Text>
-            </View>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollViewContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={colors.primary}
+          />
+        }
+      >
+        {filteredAchievements.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>
+              {filter === 'unlocked'
+                ? 'Пока нет разблокированных достижений'
+                : filter === 'locked'
+                ? 'Все достижения разблокированы! 🎉'
+                : 'Достижений не найдено'}
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.achievementsGrid}>
+            {filteredAchievements.map((achievement) => {
+              const progress = getAchievementProgress(achievement.id);
+              return (
+                <View key={achievement.id} style={styles.achievementWrapper}>
+                  <AchievementBadge
+                    achievement={achievement}
+                    progress={progress}
+                    size="large"
+                  />
+                </View>
+              );
+            })}
           </View>
         )}
-
-        {/* Rewards Info */}
-        <View style={styles.rewardsSection}>
-          <Text style={styles.rewardsSectionTitle}>О наградах</Text>
-          <View style={styles.rewardItem}>
-            <Text style={styles.rewardIcon}>⭐</Text>
-            <View style={styles.rewardInfo}>
-              <Text style={styles.rewardTitle}>Звезды</Text>
-              <Text style={styles.rewardDescription}>
-                Получайте звезды за завершение сессий и достижения
-              </Text>
-            </View>
-          </View>
-          <View style={styles.rewardItem}>
-            <Text style={styles.rewardIcon}>🏅</Text>
-            <View style={styles.rewardInfo}>
-              <Text style={styles.rewardTitle}>Медали</Text>
-              <Text style={styles.rewardDescription}>
-                Разблокируйте медали за специальные достижения
-              </Text>
-            </View>
-          </View>
-          <View style={styles.rewardItem}>
-            <Text style={styles.rewardIcon}>📈</Text>
-            <View style={styles.rewardInfo}>
-              <Text style={styles.rewardTitle}>Уровни</Text>
-              <Text style={styles.rewardDescription}>
-                Повышайте уровень, накапливая звезды и опыт
-              </Text>
-            </View>
-          </View>
-        </View>
       </ScrollView>
     </SafeAreaView>
   );
-};
-
-const getLevelTitle = (level: number): string => {
-  if (level <= 5) return 'Новичок';
-  if (level <= 10) return 'Практикант';
-  if (level <= 15) return 'Мастер';
-  if (level <= 20) return 'Эксперт';
-  return 'Легенда';
 };
 
 const styles = StyleSheet.create({
@@ -299,151 +277,153 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  scrollContent: {
-    paddingBottom: spacing.xl,
-  },
-  levelCard: {
-    margin: spacing.lg,
-    borderRadius: 16,
-    padding: spacing.lg,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    ...shadows.lg,
-  },
-  levelContent: {
+  loadingContainer: {
     flex: 1,
-  },
-  levelLabel: {
-    ...typography.caption,
-    color: 'rgba(255, 255, 255, 0.8)',
-    marginBottom: spacing.xs,
-  },
-  levelNumber: {
-    ...typography.h1,
-    color: '#FFFFFF',
-    marginBottom: spacing.xs,
-  },
-  levelTitle: {
-    ...typography.body1,
-    color: 'rgba(255, 255, 255, 0.9)',
-  },
-  starsContainer: {
-    marginLeft: spacing.lg,
-  },
-  starBadge: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 12,
-    padding: spacing.md,
+    justifyContent: 'center',
     alignItems: 'center',
-    minWidth: 70,
   },
-  starIcon: {
-    fontSize: 24,
-    marginBottom: spacing.xs,
+  loadingText: {
+    ...typography.body,
+    color: colors.textSecondary,
+    marginTop: spacing.md,
   },
-  starCount: {
-    ...typography.h3,
-    color: '#FFFFFF',
+  header: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.xl,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
   },
-  progressSection: {
-    marginHorizontal: spacing.lg,
+  headerTitle: {
+    ...typography.h1,
+    color: colors.white,
     marginBottom: spacing.lg,
   },
-  progressHeader: {
+  statsContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'space-around',
     alignItems: 'center',
     marginBottom: spacing.md,
   },
-  progressTitle: {
-    ...typography.h2,
-    color: colors.text,
+  statItem: {
+    alignItems: 'center',
+    flex: 1,
   },
-  progressStats: {
-    ...typography.body2,
-    color: colors.textSecondary,
+  statValue: {
+    ...typography.h2,
+    color: colors.white,
+    marginBottom: spacing.xs,
+  },
+  statLabel: {
+    ...typography.caption,
+    color: colors.white,
+    opacity: 0.8,
+  },
+  statDivider: {
+    width: 1,
+    height: 40,
+    backgroundColor: colors.white,
+    opacity: 0.3,
   },
   progressBarContainer: {
-    marginBottom: spacing.md,
+    marginTop: spacing.md,
   },
   progressBarBackground: {
-    height: 12,
-    backgroundColor: colors.border,
-    borderRadius: 6,
+    height: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    borderRadius: 4,
     overflow: 'hidden',
-    marginBottom: spacing.sm,
   },
   progressBarFill: {
     height: '100%',
-    borderRadius: 6,
+    backgroundColor: colors.white,
+    borderRadius: 4,
   },
-  progressPercentage: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    textAlign: 'right',
+  filtersContainer: {
+    paddingVertical: spacing.md,
+    backgroundColor: colors.background,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
-  milestoneContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: spacing.md,
-  },
-  milestoneMarker: {
-    alignItems: 'center',
-    padding: spacing.sm,
-    borderRadius: 8,
-    backgroundColor: colors.surface,
-  },
-  milestoneMarkerActive: {
-    backgroundColor: colors.primary,
-  },
-  milestoneText: {
-    ...typography.caption,
-    color: colors.textSecondary,
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  filtersContent: {
     paddingHorizontal: spacing.lg,
-    marginBottom: spacing.lg,
-    gap: spacing.md,
+    gap: spacing.sm,
   },
-  categoriesContainer: {
-    marginBottom: spacing.lg,
-  },
-  categoriesList: {
+  filterButton: {
     paddingHorizontal: spacing.lg,
-    gap: spacing.md,
-  },
-  categoryButton: {
-    paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRadius: 20,
     backgroundColor: colors.surface,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  filterButtonActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  filterButtonText: {
+    ...typography.body,
+    color: colors.textSecondary,
+  },
+  filterButtonTextActive: {
+    color: colors.white,
+    fontWeight: '600',
+  },
+  categoriesContainer: {
+    paddingVertical: spacing.sm,
+    backgroundColor: colors.background,
+  },
+  categoriesContent: {
+    paddingHorizontal: spacing.lg,
+    gap: spacing.sm,
+  },
+  categoryButton: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: 16,
+    backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
   },
   categoryButtonActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
   },
   categoryButtonText: {
-    ...typography.body2,
+    ...typography.caption,
     color: colors.textSecondary,
   },
   categoryButtonTextActive: {
-    color: '#FFFFFF',
+    color: colors.white,
+    fontWeight: '600',
   },
-  categoryBadge: {
-    backgroundColor: colors.background,
-    borderRadius: 10,
-    paddingHorizontal: spacing.xs,
-    paddingVertical: 2,
-    minWidth: 24,
+  scrollView: {
+    flex: 1,
+  },
+  scrollViewContent: {
+    padding: spacing.lg,
+  },
+  achievementsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+  achievementWrapper: {
+    width: (width - spacing.lg * 2 - spacing.md) / 2,
+    marginBottom: spacing.md,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
+    paddingVertical: spacing.xxl * 2,
   },
-  categoryBadgeActive: {
-    backgroundColor: 'rgba(255, 255, 255, 0.3
+  emptyText: {
+    ...typography.body,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+});
+
+export default AchievementsScreen;

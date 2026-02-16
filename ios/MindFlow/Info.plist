@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleDisplayName</key>
+	<string>MindFlow</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundlePackageType</key>
+	<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.0.0</string>
+	<key>CFBundleSignature</key>
+	<string>????</string>
+	<key>CFBundleVersion</key>
+	<string>1</string>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSExceptionDomains</key>
+		<dict>
+			<key>localhost</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+			</dict>
+		</dict>
+	</dict>
+	<key>NSHealthShareUsageDescription</key>
+	<string>MindFlow использует данные о здоровье для персонализации упражнений и отслеживания вашего прогресса в снижении стресса</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>MindFlow сохраняет данные о сессиях медитации и дыхательных упражнений в Health для полного контроля вашего благополучия</string>
+	<key>NSHealthClinicalHealthRecordsShareUsageDescription</key>
+	<string>MindFlow использует медицинские данные для более точных рекомендаций</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>MindFlow использует вашу геолокацию для контекстных напоминаний о практиках осознанности</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>MindFlow использует микрофон для записи голосовых заметок о вашем эмоциональном состоянии</string>
+	<key>NSMotionUsageDescription</key>
+	<string>MindFlow использует данные о движении для отслеживания активности и улучшения рекомендаций</string>
+	<key>NSUserNotificationsUsageDescription</key>
+	<string>MindFlow отправляет напоминания о практиках осознанности и достижениях</string>
+	<key>NSCameraUsageDescription</key>
+	<string>MindFlow использует камеру для создания визуальных заметок о вашем прогрессе</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>MindFlow сохраняет визуальные заметки о вашем прогрессе в фотогалерею</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>MindFlow сохраняет скриншоты достижений и статистики в вашу фотогалерею</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>audio</string>
+		<string>fetch</string>
+		<string>remote-notification</string>
+		<string>processing</string>
+	</array>
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchScreen</string>
+	<key>UIRequiredDeviceCapabilities</key>
+	<array>
+		<string>armv7</string>
+		<string>healthkit</string>
+	</array>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>UIViewControllerBasedStatusBarAppearance</key>
+	<false/>
+	<key>UIRequiresFullScreen</key>
+	<false/>
+	<key>UIStatusBarStyle</key>
+	<string>UIStatusBarStyleLightContent</string>
+	<key>UIUserInterfaceStyle</key>
+	<string>Automatic</string>
+	<key>UIHealthKitRequired</key>
+	<true/>
+	<key>UIHealthShareUsageDescription</key>
+	<string>MindFlow читает данные о сердечном ритме, сне и активности для персонализации рекомендаций</string>
+	<key>UIHealthUpdateUsageDescription</key>
+	<string>MindFlow записывает данные о медитациях и дыхательных упражнениях в Health</string>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>com.mindflow.refresh</string>
+		<string>com.mindflow.healthsync</string>
+	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.mindflow.app</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>mindflow</string>
+			</array>
+		</dict>
+	</array>
+	<key>NSUserActivityTypes</key>
+	<array>
+		<string>com.mindflow.start-exercise</string>
+		<string>com.mindflow.view-stats</string>
+	</array>
+	<key>INIntents</key>
+	<array>
+		<string>INStartWorkoutIntent</string>
+		<string>INPlayMediaIntent</string>
+	</array>
+	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>health</string>
+		<string>x-apple-health</string>
+	</array>
+</dict>
+</plist>

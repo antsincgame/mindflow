@@ -1,427 +1,291 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, ViewStyle, TextStyle } from 'react-native';
-import Svg, { Circle, Path, G } from 'react-native-svg';
-import { theme } from '../theme';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ViewStyle,
+} from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
+import { Achievement } from '../models/Achievement';
+import { colors } from '../theme/colors';
+import { typography } from '../theme/typography';
+import { spacing } from '../theme/spacing';
 
 interface AchievementBadgeProps {
-  id: string;
-  title: string;
-  description: string;
-  icon: 'star' | 'medal' | 'trophy' | 'flame' | 'crown' | 'gem';
-  unlocked: boolean;
-  unlockedAt?: string;
-  progress?: number;
-  maxProgress?: number;
+  achievement: Achievement;
   onPress?: () => void;
   size?: 'small' | 'medium' | 'large';
-  variant?: 'card' | 'compact' | 'detailed';
+  showProgress?: boolean;
+  style?: ViewStyle;
 }
 
-const AchievementBadge: React.FC<AchievementBadgeProps> = ({
-  id,
-  title,
-  description,
-  icon,
-  unlocked,
-  unlockedAt,
-  progress = 0,
-  maxProgress = 100,
+const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
+
+export const AchievementBadge: React.FC<AchievementBadgeProps> = ({
+  achievement,
   onPress,
   size = 'medium',
-  variant = 'card',
+  showProgress = false,
+  style,
 }) => {
-  const getSizeStyles = () => {
-    switch (size) {
-      case 'small':
-        return { iconSize: 40, containerPadding: 8 };
-      case 'large':
-        return { iconSize: 80, containerPadding: 20 };
-      case 'medium':
+  const scale = useSharedValue(1);
+  const rotation = useSharedValue(0);
+
+  const sizeConfig = {
+    small: {
+      container: 60,
+      icon: 24,
+      fontSize: 10,
+    },
+    medium: {
+      container: 80,
+      icon: 32,
+      fontSize: 12,
+    },
+    large: {
+      container: 100,
+      icon: 40,
+      fontSize: 14,
+    },
+  };
+
+  const config = sizeConfig[size];
+
+  const handlePress = () => {
+    scale.value = withSequence(
+      withSpring(0.9, { damping: 10 }),
+      withSpring(1, { damping: 10 })
+    );
+
+    if (achievement.isUnlocked) {
+      rotation.value = withSequence(
+        withTiming(10, { duration: 100 }),
+        withTiming(-10, { duration: 100 }),
+        withTiming(10, { duration: 100 }),
+        withTiming(0, { duration: 100 })
+      );
+    }
+
+    onPress?.();
+  };
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { scale: scale.value },
+      { rotate: `${rotation.value}deg` },
+    ],
+  }));
+
+  const getGradientColors = (): string[] => {
+    if (!achievement.isUnlocked) {
+      return [colors.gray[300], colors.gray[400]];
+    }
+
+    switch (achievement.tier) {
+      case 'bronze':
+        return ['#CD7F32', '#8B5A2B'];
+      case 'silver':
+        return ['#C0C0C0', '#808080'];
+      case 'gold':
+        return ['#FFD700', '#FFA500'];
+      case 'platinum':
+        return ['#E5E4E2', '#B8B8B8'];
       default:
-        return { iconSize: 60, containerPadding: 16 };
+        return [colors.primary[500], colors.primary[700]];
     }
   };
 
-  const renderIcon = (iconType: string, iconSize: number) => {
-    const color = unlocked ? theme.colors.accent : theme.colors.text.tertiary;
-    const opacity = unlocked ? 1 : 0.4;
-
-    switch (iconType) {
-      case 'star':
-        return (
-          <Svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none">
-            <Path
-              d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"
-              fill={color}
-              opacity={opacity}
-            />
-          </Svg>
-        );
-      case 'medal':
-        return (
-          <Svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none">
-            <Circle cx="12" cy="12" r="8" fill={color} opacity={opacity} />
-            <Path
-              d="M12 4V2M12 20V22M20 12H22M4 12H2"
-              stroke={color}
-              strokeWidth="2"
-              opacity={opacity}
-            />
-          </Svg>
-        );
-      case 'trophy':
-        return (
-          <Svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none">
-            <Path
-              d="M6 4H18C18.5304 4 19.0391 4.21071 19.4142 4.58579C19.7893 4.96086 20 5.46957 20 6V8C20 9.06087 19.5786 10.0783 18.8284 10.8284C18.0783 11.5786 17.0609 12 16 12H8C6.93913 12 5.92172 11.5786 5.17157 10.8284C4.42143 10.0783 4 9.06087 4 8V6C4 5.46957 4.21071 4.96086 4.58579 4.58579C4.96086 4.21071 5.46957 4 6 4Z"
-              fill={color}
-              opacity={opacity}
-            />
-            <Path
-              d="M8 12V14C8 15.0609 8.42143 16.0783 9.17157 16.8284C9.92172 17.5786 10.9391 18 12 18C13.0609 18 14.0783 17.5786 14.8284 16.8284C15.5786 16.0783 16 15.0609 16 14V12"
-              stroke={color}
-              strokeWidth="2"
-              opacity={opacity}
-            />
-          </Svg>
-        );
-      case 'flame':
-        return (
-          <Svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none">
-            <Path
-              d="M12 2C12 2 8 8 8 12C8 14.2091 9.79086 16 12 16C14.2091 16 16 14.2091 16 12C16 8 12 2 12 2Z"
-              fill={color}
-              opacity={opacity}
-            />
-            <Circle cx="12" cy="19" r="2" fill={color} opacity={opacity} />
-          </Svg>
-        );
-      case 'crown':
-        return (
-          <Svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none">
-            <Path
-              d="M3 6L6 12H18L21 6M6 12L9 18H15L18 12M9 18H15M12 8L14 10M12 8L10 10"
-              stroke={color}
-              strokeWidth="2"
-              opacity={opacity}
-            />
-          </Svg>
-        );
-      case 'gem':
-        return (
-          <Svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none">
-            <Path
-              d="M12 2L15 8L22 9L17 14L18 21L12 18L6 21L7 14L2 9L9 8L12 2Z"
-              fill={color}
-              opacity={opacity}
-            />
-          </Svg>
-        );
-      default:
-        return null;
+  const getProgressPercentage = (): number => {
+    if (!achievement.progress || achievement.progress.total === 0) {
+      return 0;
     }
+    return Math.min(
+      (achievement.progress.current / achievement.progress.total) * 100,
+      100
+    );
   };
 
-  const { iconSize, containerPadding } = getSizeStyles();
-  const progressPercent = maxProgress > 0 ? (progress / maxProgress) * 100 : 0;
+  const renderIcon = () => {
+    const iconSize = config.icon;
+    const iconColor = achievement.isUnlocked ? '#FFFFFF' : colors.gray[500];
 
-  const renderCompactVariant = () => (
-    <Pressable
-      style={[
-        styles.compactContainer,
-        {
-          paddingHorizontal: containerPadding,
-          paddingVertical: containerPadding * 0.75,
-          opacity: unlocked ? 1 : 0.6,
-        },
-        onPress && styles.pressable,
-      ]}
-      onPress={onPress}
-      disabled={!onPress}
-    >
-      <View style={styles.compactIconWrapper}>
-        {renderIcon(icon, iconSize * 0.6)}
-      </View>
-      <View style={styles.compactTextWrapper}>
-        <Text
-          style={[
-            styles.compactTitle,
-            { color: unlocked ? theme.colors.text.primary : theme.colors.text.secondary },
-          ]}
-          numberOfLines={1}
-        >
-          {title}
-        </Text>
-        {!unlocked && maxProgress && (
-          <Text style={styles.progressText}>
-            {progress}/{maxProgress}
-          </Text>
-        )}
-      </View>
-    </Pressable>
-  );
-
-  const renderCardVariant = () => (
-    <Pressable
-      style={[
-        styles.cardContainer,
-        {
-          paddingHorizontal: containerPadding,
-          paddingVertical: containerPadding,
-          backgroundColor: unlocked ? theme.colors.success.light : theme.colors.background.secondary,
-          borderColor: unlocked ? theme.colors.success.main : theme.colors.border,
-        },
-        onPress && styles.pressable,
-      ]}
-      onPress={onPress}
-      disabled={!onPress}
-    >
-      <View style={styles.cardIconWrapper}>
-        {renderIcon(icon, iconSize)}
-        {unlocked && (
-          <View
-            style={[
-              styles.unlockedBadge,
-              { backgroundColor: theme.colors.success.main },
-            ]}
-          >
-            <Text style={styles.unlockedBadgeText}>✓</Text>
-          </View>
-        )}
-      </View>
-      <Text
-        style={[
-          styles.cardTitle,
-          { color: unlocked ? theme.colors.text.primary : theme.colors.text.secondary },
-        ]}
-        numberOfLines={2}
-      >
-        {title}
+    return (
+      <Text style={[styles.icon, { fontSize: iconSize, color: iconColor }]}>
+        {achievement.icon}
       </Text>
-      {!unlocked && maxProgress && (
-        <View style={styles.progressBarWrapper}>
+    );
+  };
+
+  const renderProgressBar = () => {
+    if (!showProgress || achievement.isUnlocked || !achievement.progress) {
+      return null;
+    }
+
+    const percentage = getProgressPercentage();
+
+    return (
+      <View style={styles.progressContainer}>
+        <View style={styles.progressBarBackground}>
           <View
             style={[
-              styles.progressBar,
+              styles.progressBarFill,
               {
-                width: `${progressPercent}%`,
-                backgroundColor: theme.colors.accent,
+                width: `${percentage}%`,
+                backgroundColor: colors.primary[500],
               },
             ]}
           />
         </View>
-      )}
-      {!unlocked && maxProgress && (
-        <Text style={styles.progressLabel}>
-          {progress}/{maxProgress}
+        <Text style={styles.progressText}>
+          {achievement.progress.current}/{achievement.progress.total}
         </Text>
-      )}
-    </Pressable>
-  );
-
-  const renderDetailedVariant = () => (
-    <Pressable
-      style={[
-        styles.detailedContainer,
-        {
-          paddingHorizontal: containerPadding,
-          paddingVertical: containerPadding,
-          backgroundColor: unlocked ? theme.colors.success.light : theme.colors.background.secondary,
-          borderColor: unlocked ? theme.colors.success.main : theme.colors.border,
-        },
-        onPress && styles.pressable,
-      ]}
-      onPress={onPress}
-      disabled={!onPress}
-    >
-      <View style={styles.detailedHeader}>
-        <View style={styles.detailedIconWrapper}>
-          {renderIcon(icon, iconSize)}
-          {unlocked && (
-            <View
-              style={[
-                styles.unlockedBadge,
-                { backgroundColor: theme.colors.success.main },
-              ]}
-            >
-              <Text style={styles.unlockedBadgeText}>✓</Text>
-            </View>
-          )}
-        </View>
-        <View style={styles.detailedTitleWrapper}>
-          <Text
-            style={[
-              styles.detailedTitle,
-              { color: unlocked ? theme.colors.text.primary : theme.colors.text.secondary },
-            ]}
-            numberOfLines={2}
-          >
-            {title}
-          </Text>
-          {unlocked && unlockedAt && (
-            <Text style={styles.unlockedDate}>
-              {new Date(unlockedAt).toLocaleDateString()}
-            </Text>
-          )}
-        </View>
       </View>
+    );
+  };
+
+  const renderBadgeContent = () => (
+    <>
+      <LinearGradient
+        colors={getGradientColors()}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[
+          styles.badge,
+          {
+            width: config.container,
+            height: config.container,
+            opacity: achievement.isUnlocked ? 1 : 0.5,
+          },
+        ]}
+      >
+        {renderIcon()}
+        
+        {achievement.isUnlocked && (
+          <View style={styles.checkmarkContainer}>
+            <Text style={styles.checkmark}>✓</Text>
+          </View>
+        )}
+      </LinearGradient>
+
       <Text
         style={[
-          styles.detailedDescription,
-          { color: theme.colors.text.secondary },
+          styles.title,
+          {
+            fontSize: config.fontSize,
+            color: achievement.isUnlocked ? colors.text.primary : colors.text.secondary,
+          },
         ]}
         numberOfLines={2}
       >
-        {description}
+        {achievement.title}
       </Text>
-      {!unlocked && maxProgress && (
-        <>
-          <View style={styles.progressBarWrapper}>
-            <View
-              style={[
-                styles.progressBar,
-                {
-                  width: `${progressPercent}%`,
-                  backgroundColor: theme.colors.accent,
-                },
-              ]}
-            />
-          </View>
-          <Text style={styles.progressLabel}>
-            {progress}/{maxProgress}
-          </Text>
-        </>
+
+      {achievement.isUnlocked && achievement.unlockedAt && (
+        <Text style={styles.date}>
+          {new Date(achievement.unlockedAt).toLocaleDateString('ru-RU', {
+            day: 'numeric',
+            month: 'short',
+          })}
+        </Text>
       )}
-    </Pressable>
+
+      {renderProgressBar()}
+    </>
   );
 
-  switch (variant) {
-    case 'compact':
-      return renderCompactVariant();
-    case 'detailed':
-      return renderDetailedVariant();
-    case 'card':
-    default:
-      return renderCardVariant();
-  }
+  return (
+    <AnimatedTouchableOpacity
+      style={[styles.container, animatedStyle, style]}
+      onPress={handlePress}
+      activeOpacity={0.8}
+      disabled={!onPress}
+    >
+      {renderBadgeContent()}
+    </AnimatedTouchableOpacity>
+  );
 };
 
 const styles = StyleSheet.create({
-  pressable: {
-    opacity: 1,
-  },
-  compactContainer: {
-    flexDirection: 'row',
+  container: {
     alignItems: 'center',
-    backgroundColor: theme.colors.background.secondary,
-    borderRadius: theme.spacing.radius.md,
-    marginVertical: theme.spacing.sm,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
+    justifyContent: 'flex-start',
+    padding: spacing.sm,
   },
-  compactIconWrapper: {
-    marginRight: theme.spacing.md,
+  badge: {
+    borderRadius: 1000,
+    alignItems: 'center',
     justifyContent: 'center',
-    alignItems: 'center',
-  },
-  compactTextWrapper: {
-    flex: 1,
-  },
-  compactTitle: {
-    fontSize: theme.typography.sizes.md,
-    fontWeight: theme.typography.weights.semibold as any,
-  },
-  progressText: {
-    fontSize: theme.typography.sizes.xs,
-    color: theme.colors.text.tertiary,
-    marginTop: theme.spacing.xs,
-  },
-  cardContainer: {
-    alignItems: 'center',
-    backgroundColor: theme.colors.background.secondary,
-    borderRadius: theme.spacing.radius.lg,
-    marginVertical: theme.spacing.md,
-    borderWidth: 2,
-    borderColor: theme.colors.border,
-    minHeight: 160,
-    justifyContent: 'space-between',
-  },
-  cardIconWrapper: {
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 4.65,
+    elevation: 8,
     position: 'relative',
-    marginBottom: theme.spacing.md,
   },
-  cardTitle: {
-    fontSize: theme.typography.sizes.md,
-    fontWeight: theme.typography.weights.semibold as any,
-    textAlign: 'center',
-    marginBottom: theme.spacing.md,
+  icon: {
+    fontWeight: 'bold',
   },
-  unlockedBadge: {
+  checkmarkContainer: {
     position: 'absolute',
     bottom: -4,
     right: -4,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    justifyContent: 'center',
+    backgroundColor: colors.success[500],
+    borderRadius: 12,
+    width: 24,
+    height: 24,
     alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 2,
-    borderColor: theme.colors.background.primary,
+    borderColor: '#FFFFFF',
   },
-  unlockedBadgeText: {
-    color: theme.colors.background.primary,
-    fontSize: theme.typography.sizes.lg,
-    fontWeight: theme.typography.weights.bold as any,
+  checkmark: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: 'bold',
   },
-  progressBarWrapper: {
+  title: {
+    marginTop: spacing.xs,
+    textAlign: 'center',
+    fontFamily: typography.fontFamily.medium,
+    maxWidth: 100,
+  },
+  date: {
+    fontSize: 10,
+    color: colors.text.tertiary,
+    fontFamily: typography.fontFamily.regular,
+    marginTop: 2,
+  },
+  progressContainer: {
+    marginTop: spacing.xs,
     width: '100%',
-    height: 6,
-    backgroundColor: theme.colors.background.primary,
-    borderRadius: 3,
+    alignItems: 'center',
+  },
+  progressBarBackground: {
+    width: '100%',
+    height: 4,
+    backgroundColor: colors.gray[200],
+    borderRadius: 2,
     overflow: 'hidden',
-    marginBottom: theme.spacing.sm,
   },
-  progressBar: {
+  progressBarFill: {
     height: '100%',
-    borderRadius: 3,
+    borderRadius: 2,
   },
-  progressLabel: {
-    fontSize: theme.typography.sizes.xs,
-    color: theme.colors.text.tertiary,
-  },
-  detailedContainer: {
-    backgroundColor: theme.colors.background.secondary,
-    borderRadius: theme.spacing.radius.lg,
-    marginVertical: theme.spacing.md,
-    borderWidth: 2,
-    borderColor: theme.colors.border,
-  },
-  detailedHeader: {
-    flexDirection: 'row',
-    marginBottom: theme.spacing.md,
-    alignItems: 'flex-start',
-  },
-  detailedIconWrapper: {
-    position: 'relative',
-    marginRight: theme.spacing.md,
-  },
-  detailedTitleWrapper: {
-    flex: 1,
-  },
-  detailedTitle: {
-    fontSize: theme.typography.sizes.lg,
-    fontWeight: theme.typography.weights.bold as any,
-  },
-  unlockedDate: {
-    fontSize: theme.typography.sizes.xs,
-    color: theme.colors.success.main,
-    marginTop: theme.spacing.xs,
-  },
-  detailedDescription: {
-    fontSize: theme.typography.sizes.sm,
-    lineHeight: 20,
-    marginBottom: theme.spacing.md,
+  progressText: {
+    fontSize: 10,
+    color: colors.text.secondary,
+    fontFamily: typography.fontFamily.regular,
+    marginTop: 2,
   },
 });
-
-export default AchievementBadge;

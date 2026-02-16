@@ -1,241 +1,415 @@
+import { TextStyle } from 'react-native';
 import { Platform } from 'react-native';
 
+const fontFamily = {
+  regular: Platform.select({
+    ios: 'System',
+    android: 'Roboto',
+    default: 'System',
+  }),
+  medium: Platform.select({
+    ios: 'System',
+    android: 'Roboto-Medium',
+    default: 'System',
+  }),
+  semiBold: Platform.select({
+    ios: 'System',
+    android: 'Roboto-Medium',
+    default: 'System',
+  }),
+  bold: Platform.select({
+    ios: 'System',
+    android: 'Roboto-Bold',
+    default: 'System',
+  }),
+};
+
+const fontWeights = {
+  regular: '400' as TextStyle['fontWeight'],
+  medium: '500' as TextStyle['fontWeight'],
+  semiBold: '600' as TextStyle['fontWeight'],
+  bold: '700' as TextStyle['fontWeight'],
+};
+
 export const typography = {
-  fontFamily: {
-    regular: Platform.select({
-      ios: 'System',
-      android: 'Roboto',
-    }),
-    medium: Platform.select({
-      ios: 'System',
-      android: 'Roboto',
-    }),
-    semibold: Platform.select({
-      ios: 'System',
-      android: 'Roboto',
-    }),
-    bold: Platform.select({
-      ios: 'System',
-      android: 'Roboto',
-    }),
-  },
+  // Display styles
+  display1: {
+    fontFamily: fontFamily.bold,
+    fontWeight: fontWeights.bold,
+    fontSize: 48,
+    lineHeight: 56,
+    letterSpacing: -0.5,
+  } as TextStyle,
 
-  fontWeight: {
-    regular: '400' as const,
-    medium: '500' as const,
-    semibold: '600' as const,
-    bold: '700' as const,
-  },
-
-  fontSize: {
-    xs: 11,
-    sm: 12,
-    base: 14,
-    lg: 16,
-    xl: 18,
-    '2xl': 20,
-    '3xl': 24,
-    '4xl': 28,
-    '5xl': 32,
-    '6xl': 36,
-    '7xl': 40,
-  },
-
-  lineHeight: {
-    xs: 16,
-    sm: 18,
-    base: 20,
-    lg: 24,
-    xl: 28,
-    '2xl': 30,
-    '3xl': 36,
-    '4xl': 40,
-    '5xl': 48,
-    '6xl': 52,
-    '7xl': 56,
-  },
-
-  heading1: {
+  display2: {
+    fontFamily: fontFamily.bold,
+    fontWeight: fontWeights.bold,
     fontSize: 40,
-    fontWeight: '700' as const,
     lineHeight: 48,
     letterSpacing: -0.5,
-  },
+  } as TextStyle,
 
-  heading2: {
+  // Heading styles
+  h1: {
+    fontFamily: fontFamily.bold,
+    fontWeight: fontWeights.bold,
     fontSize: 32,
-    fontWeight: '700' as const,
     lineHeight: 40,
-    letterSpacing: -0.3,
-  },
+    letterSpacing: -0.5,
+  } as TextStyle,
 
-  heading3: {
+  h2: {
+    fontFamily: fontFamily.bold,
+    fontWeight: fontWeights.bold,
     fontSize: 28,
-    fontWeight: '600' as const,
     lineHeight: 36,
-    letterSpacing: -0.2,
-  },
+    letterSpacing: -0.5,
+  } as TextStyle,
 
-  heading4: {
+  h3: {
+    fontFamily: fontFamily.semiBold,
+    fontWeight: fontWeights.semiBold,
     fontSize: 24,
-    fontWeight: '600' as const,
     lineHeight: 32,
-    letterSpacing: 0,
-  },
+    letterSpacing: -0.25,
+  } as TextStyle,
 
-  heading5: {
+  h4: {
+    fontFamily: fontFamily.semiBold,
+    fontWeight: fontWeights.semiBold,
     fontSize: 20,
-    fontWeight: '600' as const,
     lineHeight: 28,
-    letterSpacing: 0,
-  },
+    letterSpacing: -0.25,
+  } as TextStyle,
 
-  heading6: {
+  h5: {
+    fontFamily: fontFamily.semiBold,
+    fontWeight: fontWeights.semiBold,
     fontSize: 18,
-    fontWeight: '600' as const,
-    lineHeight: 26,
+    lineHeight: 24,
     letterSpacing: 0,
-  },
+  } as TextStyle,
 
-  body: {
-    regular: {
-      fontSize: 16,
-      fontWeight: '400' as const,
-      lineHeight: 24,
-      letterSpacing: 0.3,
-    },
-    medium: {
-      fontSize: 16,
-      fontWeight: '500' as const,
-      lineHeight: 24,
-      letterSpacing: 0.3,
-    },
-    semibold: {
-      fontSize: 16,
-      fontWeight: '600' as const,
-      lineHeight: 24,
-      letterSpacing: 0.3,
-    },
-  },
+  h6: {
+    fontFamily: fontFamily.semiBold,
+    fontWeight: fontWeights.semiBold,
+    fontSize: 16,
+    lineHeight: 22,
+    letterSpacing: 0,
+  } as TextStyle,
 
-  bodySmall: {
-    regular: {
-      fontSize: 14,
-      fontWeight: '400' as const,
-      lineHeight: 20,
-      letterSpacing: 0.2,
-    },
-    medium: {
-      fontSize: 14,
-      fontWeight: '500' as const,
-      lineHeight: 20,
-      letterSpacing: 0.2,
-    },
-    semibold: {
-      fontSize: 14,
-      fontWeight: '600' as const,
-      lineHeight: 20,
-      letterSpacing: 0.2,
-    },
-  },
+  // Body styles
+  body1: {
+    fontFamily: fontFamily.regular,
+    fontWeight: fontWeights.regular,
+    fontSize: 16,
+    lineHeight: 24,
+    letterSpacing: 0.15,
+  } as TextStyle,
 
+  body2: {
+    fontFamily: fontFamily.regular,
+    fontWeight: fontWeights.regular,
+    fontSize: 14,
+    lineHeight: 20,
+    letterSpacing: 0.15,
+  } as TextStyle,
+
+  body1Medium: {
+    fontFamily: fontFamily.medium,
+    fontWeight: fontWeights.medium,
+    fontSize: 16,
+    lineHeight: 24,
+    letterSpacing: 0.15,
+  } as TextStyle,
+
+  body2Medium: {
+    fontFamily: fontFamily.medium,
+    fontWeight: fontWeights.medium,
+    fontSize: 14,
+    lineHeight: 20,
+    letterSpacing: 0.15,
+  } as TextStyle,
+
+  // Caption styles
   caption: {
-    regular: {
-      fontSize: 12,
-      fontWeight: '400' as const,
-      lineHeight: 16,
-      letterSpacing: 0.4,
-    },
-    medium: {
-      fontSize: 12,
-      fontWeight: '500' as const,
-      lineHeight: 16,
-      letterSpacing: 0.4,
-    },
-    semibold: {
-      fontSize: 12,
-      fontWeight: '600' as const,
-      lineHeight: 16,
-      letterSpacing: 0.4,
-    },
-  },
+    fontFamily: fontFamily.regular,
+    fontWeight: fontWeights.regular,
+    fontSize: 12,
+    lineHeight: 16,
+    letterSpacing: 0.4,
+  } as TextStyle,
 
+  captionMedium: {
+    fontFamily: fontFamily.medium,
+    fontWeight: fontWeights.medium,
+    fontSize: 12,
+    lineHeight: 16,
+    letterSpacing: 0.4,
+  } as TextStyle,
+
+  // Overline styles
+  overline: {
+    fontFamily: fontFamily.medium,
+    fontWeight: fontWeights.medium,
+    fontSize: 10,
+    lineHeight: 16,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase' as TextStyle['textTransform'],
+  } as TextStyle,
+
+  // Button styles
   button: {
-    large: {
-      fontSize: 18,
-      fontWeight: '600' as const,
-      lineHeight: 26,
-      letterSpacing: 0.3,
-    },
-    medium: {
-      fontSize: 16,
-      fontWeight: '600' as const,
-      lineHeight: 24,
-      letterSpacing: 0.3,
-    },
-    small: {
-      fontSize: 14,
-      fontWeight: '600' as const,
-      lineHeight: 20,
-      letterSpacing: 0.2,
-    },
-  },
+    fontFamily: fontFamily.semiBold,
+    fontWeight: fontWeights.semiBold,
+    fontSize: 16,
+    lineHeight: 24,
+    letterSpacing: 0.5,
+    textTransform: 'none' as TextStyle['textTransform'],
+  } as TextStyle,
 
+  buttonSmall: {
+    fontFamily: fontFamily.semiBold,
+    fontWeight: fontWeights.semiBold,
+    fontSize: 14,
+    lineHeight: 20,
+    letterSpacing: 0.5,
+    textTransform: 'none' as TextStyle['textTransform'],
+  } as TextStyle,
+
+  buttonLarge: {
+    fontFamily: fontFamily.semiBold,
+    fontWeight: fontWeights.semiBold,
+    fontSize: 18,
+    lineHeight: 26,
+    letterSpacing: 0.5,
+    textTransform: 'none' as TextStyle['textTransform'],
+  } as TextStyle,
+
+  // Label styles
   label: {
-    large: {
-      fontSize: 14,
-      fontWeight: '500' as const,
-      lineHeight: 20,
-      letterSpacing: 0.1,
-    },
-    medium: {
-      fontSize: 12,
-      fontWeight: '500' as const,
-      lineHeight: 16,
-      letterSpacing: 0.1,
-    },
-    small: {
-      fontSize: 11,
-      fontWeight: '500' as const,
-      lineHeight: 16,
-      letterSpacing: 0.1,
-    },
-  },
+    fontFamily: fontFamily.medium,
+    fontWeight: fontWeights.medium,
+    fontSize: 14,
+    lineHeight: 20,
+    letterSpacing: 0.25,
+  } as TextStyle,
 
-  display: {
-    large: {
-      fontSize: 57,
-      fontWeight: '700' as const,
-      lineHeight: 64,
-      letterSpacing: -0.25,
-    },
-    medium: {
-      fontSize: 45,
-      fontWeight: '700' as const,
-      lineHeight: 52,
-      letterSpacing: 0,
-    },
-    small: {
-      fontSize: 36,
-      fontWeight: '700' as const,
-      lineHeight: 44,
-      letterSpacing: 0,
-    },
-  },
+  labelSmall: {
+    fontFamily: fontFamily.medium,
+    fontWeight: fontWeights.medium,
+    fontSize: 12,
+    lineHeight: 16,
+    letterSpacing: 0.25,
+  } as TextStyle,
 
+  // Special styles for specific use cases
   timer: {
-    fontSize: 80,
-    fontWeight: '700' as const,
-    lineHeight: 96,
-    letterSpacing: -2,
-  },
-
-  timerSmall: {
-    fontSize: 48,
-    fontWeight: '700' as const,
-    lineHeight: 56,
+    fontFamily: fontFamily.bold,
+    fontWeight: fontWeights.bold,
+    fontSize: 72,
+    lineHeight: 80,
     letterSpacing: -1,
-  },
-} as const;
+  } as TextStyle,
+
+  emotionTitle: {
+    fontFamily: fontFamily.bold,
+    fontWeight: fontWeights.bold,
+    fontSize: 36,
+    lineHeight: 44,
+    letterSpacing: -0.5,
+  } as TextStyle,
+
+  exerciseTitle: {
+    fontFamily: fontFamily.semiBold,
+    fontWeight: fontWeights.semiBold,
+    fontSize: 22,
+    lineHeight: 30,
+    letterSpacing: -0.25,
+  } as TextStyle,
+
+  statisticValue: {
+    fontFamily: fontFamily.bold,
+    fontWeight: fontWeights.bold,
+    fontSize: 32,
+    lineHeight: 40,
+    letterSpacing: -0.5,
+  } as TextStyle,
+
+  statisticLabel: {
+    fontFamily: fontFamily.regular,
+    fontWeight: fontWeights.regular,
+    fontSize: 12,
+    lineHeight: 16,
+    letterSpacing: 0.4,
+  } as TextStyle,
+
+  achievementTitle: {
+    fontFamily: fontFamily.semiBold,
+    fontWeight: fontWeights.semiBold,
+    fontSize: 16,
+    lineHeight: 22,
+    letterSpacing: 0,
+  } as TextStyle,
+
+  achievementDescription: {
+    fontFamily: fontFamily.regular,
+    fontWeight: fontWeights.regular,
+    fontSize: 13,
+    lineHeight: 18,
+    letterSpacing: 0.15,
+  } as TextStyle,
+
+  tabLabel: {
+    fontFamily: fontFamily.medium,
+    fontWeight: fontWeights.medium,
+    fontSize: 11,
+    lineHeight: 16,
+    letterSpacing: 0.5,
+  } as TextStyle,
+
+  navigationTitle: {
+    fontFamily: fontFamily.semiBold,
+    fontWeight: fontWeights.semiBold,
+    fontSize: 17,
+    lineHeight: 22,
+    letterSpacing: -0.25,
+  } as TextStyle,
+
+  cardTitle: {
+    fontFamily: fontFamily.semiBold,
+    fontWeight: fontWeights.semiBold,
+    fontSize: 18,
+    lineHeight: 24,
+    letterSpacing: 0,
+  } as TextStyle,
+
+  cardSubtitle: {
+    fontFamily: fontFamily.regular,
+    fontWeight: fontWeights.regular,
+    fontSize: 14,
+    lineHeight: 20,
+    letterSpacing: 0.15,
+  } as TextStyle,
+
+  inputLabel: {
+    fontFamily: fontFamily.medium,
+    fontWeight: fontWeights.medium,
+    fontSize: 14,
+    lineHeight: 20,
+    letterSpacing: 0.15,
+  } as TextStyle,
+
+  inputText: {
+    fontFamily: fontFamily.regular,
+    fontWeight: fontWeights.regular,
+    fontSize: 16,
+    lineHeight: 24,
+    letterSpacing: 0.15,
+  } as TextStyle,
+
+  errorText: {
+    fontFamily: fontFamily.regular,
+    fontWeight: fontWeights.regular,
+    fontSize: 12,
+    lineHeight: 16,
+    letterSpacing: 0.4,
+  } as TextStyle,
+
+  helperText: {
+    fontFamily: fontFamily.regular,
+    fontWeight: fontWeights.regular,
+    fontSize: 12,
+    lineHeight: 16,
+    letterSpacing: 0.4,
+  } as TextStyle,
+
+  tooltipText: {
+    fontFamily: fontFamily.regular,
+    fontWeight: fontWeights.regular,
+    fontSize: 12,
+    lineHeight: 16,
+    letterSpacing: 0.4,
+  } as TextStyle,
+
+  badgeText: {
+    fontFamily: fontFamily.semiBold,
+    fontWeight: fontWeights.semiBold,
+    fontSize: 10,
+    lineHeight: 14,
+    letterSpacing: 0.5,
+  } as TextStyle,
+
+  chipText: {
+    fontFamily: fontFamily.medium,
+    fontWeight: fontWeights.medium,
+    fontSize: 13,
+    lineHeight: 18,
+    letterSpacing: 0.15,
+  } as TextStyle,
+
+  link: {
+    fontFamily: fontFamily.medium,
+    fontWeight: fontWeights.medium,
+    fontSize: 14,
+    lineHeight: 20,
+    letterSpacing: 0.15,
+    textDecorationLine: 'underline' as TextStyle['textDecorationLine'],
+  } as TextStyle,
+
+  quote: {
+    fontFamily: fontFamily.regular,
+    fontWeight: fontWeights.regular,
+    fontSize: 18,
+    lineHeight: 28,
+    letterSpacing: 0.15,
+    fontStyle: 'italic' as TextStyle['fontStyle'],
+  } as TextStyle,
+
+  code: {
+    fontFamily: Platform.select({
+      ios: 'Menlo',
+      android: 'monospace',
+      default: 'monospace',
+    }),
+    fontWeight: fontWeights.regular,
+    fontSize: 14,
+    lineHeight: 20,
+    letterSpacing: 0,
+  } as TextStyle,
+};
+
+export const fontSizes = {
+  xs: 10,
+  sm: 12,
+  md: 14,
+  lg: 16,
+  xl: 18,
+  xxl: 20,
+  xxxl: 24,
+  huge: 32,
+  massive: 48,
+};
+
+export const lineHeights = {
+  tight: 1.2,
+  normal: 1.5,
+  relaxed: 1.75,
+  loose: 2,
+};
+
+export const letterSpacings = {
+  tighter: -0.5,
+  tight: -0.25,
+  normal: 0,
+  wide: 0.15,
+  wider: 0.4,
+  widest: 1.5,
+};
 
 export type Typography = typeof typography;
+export type FontSize = keyof typeof fontSizes;
+export type LineHeight = keyof typeof lineHeights;
+export type LetterSpacing = keyof typeof letterSpacings;
+
+export default typography;
