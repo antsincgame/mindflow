@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleDisplayName</key>
+	<string>MindFlow</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundlePackageType</key>
+	<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.0</string>
+	<key>CFBundleVersion</key>
+	<string>1</string>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>UIApplicationSceneManifest</key>
+	<dict>
+		<key>UIApplicationSupportsMultipleScenes</key>
+		<true/>
+	</dict>
+	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
+	<key>UILaunchScreen</key>
+	<dict>
+		<key>UIColorName</key>
+		<string>Background</string>
+		<key>UIImageName</key>
+		<string>meditation-placeholder</string>
+	</dict>
+	<key>UIRequiredDeviceCapabilities</key>
+	<array>
+		<string>armv7</string>
+	</array>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>NSHealthShareUsageDescription</key>
+	<string>MindFlow needs access to your heart rate and activity data to detect stress levels and provide personalized meditation recommendations. This helps us understand when you might benefit most from a mindfulness session.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>MindFlow would like to save your meditation sessions to the Health app so you can track your mindfulness practice alongside other health metrics.</string>
+	<key>NSCalendarsUsageDescription</key>
+	<string>MindFlow needs access to your calendar to identify important events and meetings that might cause stress. This allows us to proactively suggest meditation sessions before high-stress situations.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>MindFlow can use your microphone to create a personalized instructor voice for your meditation sessions. This is completely optional and you can skip this feature.</string>
+	<key>NSUserNotificationsUsageDescription</key>
+	<string>MindFlow sends you timely notifications when stress is detected or to remind you about your meditation practice. These notifications help you maintain a consistent mindfulness routine.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>audio</string>
+		<string>fetch</string>
+		<string>processing</string>
+		<string>remote-notification</string>
+	</array>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>$(PRODUCT_BUNDLE_IDENTIFIER).refresh</string>
+		<string>$(PRODUCT_BUNDLE_IDENTIFIER).stress-analysis</string>
+	</array>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<false/>
+		<key>NSExceptionDomains</key>
+		<dict>
+			<key>supabase.co</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<false/>
+				<key>NSIncludesSubdomains</key>
+				<true/>
+				<key>NSExceptionRequiresForwardSecrecy</key>
+				<true/>
+				<key>NSExceptionMinimumTLSVersion</key>
+				<string>TLSv1.2</string>
+			</dict>
+		</dict>
+	</dict>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<key>UIViewControllerBasedStatusBarAppearance</key>
+	<true/>
+	<key>UIStatusBarStyle</key>
+	<string>UIStatusBarStyleDarkContent</string>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
+	<key>NSSupportsLiveActivitiesFrequentUpdates</key>
+	<true/>
+	<key>UISupportsDocumentBrowser</key>
+	<false/>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<false/>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>mindflow</string>
+			</array>
+		</dict>
+	</array>
+	<key>NSHealthClinicalHealthRecordsShareUsageDescription</key>
+	<string>MindFlow does not access clinical health records.</string>
+	<key>UIRequiresPersistentWiFi</key>
+	<false/>
+	<key>UIFileSharingEnabled</key>
+	<false/>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>tel</string>
+		<string>mailto</string>
+	</array>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>MindFlow may use your location to provide context-aware meditation recommendations based on your environment.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>MindFlow may use your location to provide context-aware meditation recommendations based on your environment.</string>
+	<key>UIUserInterfaceStyle</key>
+	<string>Light</string>
+	<key>UISupportsDynamicType</key>
+	<true/>
+	<key>UIAccessibilityTraits</key>
+	<array>
+		<string>UIAccessibilityTraitButton</string>
+		<string>UIAccessibilityTraitStaticText</string>
+	</array>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>MindFlow does not access your photo library.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>MindFlow does not access your camera.</string>
+	<key>NSContactsUsageDescription</key>
+	<string>MindFlow does not access your contacts.</string>
+	<key>NSMotionUsageDescription</key>
+	<string>MindFlow may use motion data from your Apple Watch to detect stress patterns.</string>
+	<key>NSSiriUsageDescription</key>
+	<string>MindFlow can integrate with Siri to start meditation sessions with voice commands.</string>
+	<key>NSAppleMusicUsageDescription</key>
+	<string>MindFlow does not access Apple Music.</string>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>MindFlow may use Bluetooth to connect with your Apple Watch for heart rate monitoring.</string>
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>MindFlow may use Bluetooth to connect with your Apple Watch for heart rate monitoring.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>MindFlow uses local network to sync data securely.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>MindFlow can use Face ID to securely access your meditation data.</string>
+	<key>NSRemindersUsageDescription</key>
+	<string>MindFlow does not access your reminders.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>MindFlow does not use speech recognition.</string>
+	<key>NSVideoSubscriberAccountUsageDescription</key>
+	<string>MindFlow does not access video subscriber accounts.</string>
+	<key>NSHomeKitUsageDescription</key>
+	<string>MindFlow does not access HomeKit.</string>
+	<key>NSMediaLibraryUsageDescription</key>
+	<string>MindFlow does not access your media library.</string>
+	<key>NSAppleEventsUsageDescription</key>
+	<string>MindFlow does not use Apple Events.</string>
+	<key>NSSystemExtensionUsageDescription</key>
+	<string>MindFlow does not use system extensions.</string>
+</dict>
+</plist>

@@ -1,0 +1,257 @@
+name: MindFlow
+options:
+  bundleIdPrefix: com.mindflow
+  deploymentTarget:
+    iOS: "16.0"
+  developmentLanguage: en
+  xcodeVersion: "15.0"
+  createIntermediateGroups: true
+  groupSortPosition: top
+  generateEmptyDirectories: true
+  
+settings:
+  base:
+    PRODUCT_NAME: MindFlow
+    SWIFT_VERSION: "5.9"
+    IPHONEOS_DEPLOYMENT_TARGET: "16.0"
+    TARGETED_DEVICE_FAMILY: "1"
+    ENABLE_BITCODE: NO
+    SWIFT_EMIT_LOC_STRINGS: YES
+    CURRENT_PROJECT_VERSION: "1"
+    MARKETING_VERSION: "1.0.0"
+    ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+    ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+    INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+    INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: YES
+    INFOPLIST_KEY_UILaunchScreen_Generation: YES
+    INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+    INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+    CODE_SIGN_STYLE: Automatic
+    DEVELOPMENT_TEAM: ""
+    ENABLE_PREVIEWS: YES
+    
+packages:
+  Supabase:
+    url: https://github.com/supabase/supabase-swift
+    from: "2.5.1"
+
+targets:
+  MindFlow:
+    type: application
+    platform: iOS
+    deploymentTarget: "16.0"
+    sources:
+      - path: MindFlow
+        excludes:
+          - "**/*.md"
+          - "**/Info.plist"
+      - path: src
+    resources:
+      - path: Assets.xcassets
+      - path: MindFlow/Preview Content
+    info:
+      path: MindFlow/Info.plist
+      properties:
+        CFBundleDevelopmentRegion: $(DEVELOPMENT_LANGUAGE)
+        CFBundleExecutable: $(EXECUTABLE_NAME)
+        CFBundleIdentifier: $(PRODUCT_BUNDLE_IDENTIFIER)
+        CFBundleInfoDictionaryVersion: "6.0"
+        CFBundleName: $(PRODUCT_NAME)
+        CFBundlePackageType: $(PRODUCT_BUNDLE_PACKAGE_TYPE)
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        LSRequiresIPhoneOS: true
+        UILaunchScreen: {}
+        UIRequiredDeviceCapabilities:
+          - armv7
+          - healthkit
+        NSHealthShareUsageDescription: "MindFlow needs access to your heart rate and activity data to analyze your stress levels and provide personalized meditation recommendations."
+        NSHealthUpdateUsageDescription: "MindFlow will record your meditation sessions to HealthKit to track your mindfulness practice."
+        NSCalendarsUsageDescription: "MindFlow accesses your calendar to detect stressful events and suggest timely meditation sessions."
+        NSMicrophoneUsageDescription: "MindFlow can use your microphone to personalize the instructor's voice (optional)."
+        NSUserNotificationsUsageDescription: "MindFlow sends you notifications when stress is detected to help you stay calm throughout the day."
+        UIBackgroundModes:
+          - audio
+          - fetch
+          - processing
+          - remote-notification
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+          UISceneConfigurations:
+            UIWindowSceneSessionRoleApplication:
+              - UISceneConfigurationName: Default Configuration
+                UISceneDelegateClassName: $(PRODUCT_MODULE_NAME).SceneDelegate
+    entitlements:
+      path: MindFlow/MindFlow.entitlements
+      properties:
+        com.apple.developer.healthkit: true
+        com.apple.developer.healthkit.access:
+          - health-records
+        aps-environment: development
+        com.apple.security.application-groups:
+          - group.com.mindflow.shared
+    dependencies:
+      - package: Supabase
+        product: Supabase
+      - target: MindFlowWidget
+      - target: MindFlowNotificationService
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.mindflow.app
+        INFOPLIST_FILE: MindFlow/Info.plist
+        ENABLE_HARDENED_RUNTIME: NO
+        SUPPORTS_MACCATALYST: NO
+    scheme:
+      testTargets:
+        - name: MindFlowTests
+          parallelizable: true
+          randomExecutionOrder: true
+        - name: MindFlowUITests
+          parallelizable: false
+          randomExecutionOrder: false
+      gatherCoverageData: true
+      
+  MindFlowWidget:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: "16.0"
+    sources:
+      - path: MindFlowWidget
+        excludes:
+          - "**/Info.plist"
+    resources:
+      - path: MindFlowWidget/Assets.xcassets
+    info:
+      path: MindFlowWidget/Info.plist
+      properties:
+        CFBundleDevelopmentRegion: $(DEVELOPMENT_LANGUAGE)
+        CFBundleDisplayName: MindFlow Widget
+        CFBundleExecutable: $(EXECUTABLE_NAME)
+        CFBundleIdentifier: $(PRODUCT_BUNDLE_IDENTIFIER)
+        CFBundleInfoDictionaryVersion: "6.0"
+        CFBundleName: $(PRODUCT_NAME)
+        CFBundlePackageType: $(PRODUCT_BUNDLE_PACKAGE_TYPE)
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    entitlements:
+      path: MindFlowWidget/MindFlowWidget.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.mindflow.shared
+    dependencies:
+      - sdk: SwiftUI.framework
+      - sdk: WidgetKit.framework
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.mindflow.app.widget
+        INFOPLIST_FILE: MindFlowWidget/Info.plist
+        SKIP_INSTALL: YES
+        
+  MindFlowNotificationService:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: "16.0"
+    sources:
+      - path: MindFlowNotificationService
+        excludes:
+          - "**/Info.plist"
+    info:
+      path: MindFlowNotificationService/Info.plist
+      properties:
+        CFBundleDevelopmentRegion: $(DEVELOPMENT_LANGUAGE)
+        CFBundleDisplayName: MindFlow Notification Service
+        CFBundleExecutable: $(EXECUTABLE_NAME)
+        CFBundleIdentifier: $(PRODUCT_BUNDLE_IDENTIFIER)
+        CFBundleInfoDictionaryVersion: "6.0"
+        CFBundleName: $(PRODUCT_NAME)
+        CFBundlePackageType: $(PRODUCT_BUNDLE_PACKAGE_TYPE)
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.usernotifications.service
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).NotificationService
+    entitlements:
+      path: MindFlowNotificationService/MindFlowNotificationService.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.mindflow.shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.mindflow.app.notification-service
+        INFOPLIST_FILE: MindFlowNotificationService/Info.plist
+        SKIP_INSTALL: YES
+        
+  MindFlowTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "16.0"
+    sources:
+      - path: Tests/MindFlowTests
+    dependencies:
+      - target: MindFlow
+      - package: Supabase
+        product: Supabase
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.mindflow.tests
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/MindFlow.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/MindFlow
+        BUNDLE_LOADER: $(TEST_HOST)
+        
+  MindFlowUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    deploymentTarget: "16.0"
+    sources:
+      - path: Tests/MindFlowUITests
+    dependencies:
+      - target: MindFlow
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.mindflow.uitests
+        TEST_TARGET_NAME: MindFlow
+
+schemes:
+  MindFlow:
+    build:
+      targets:
+        MindFlow: all
+        MindFlowWidget: all
+        MindFlowNotificationService: all
+    run:
+      config: Debug
+      commandLineArguments:
+        "-FIRAnalyticsDebugEnabled": true
+      environmentVariables:
+        - variable: OS_ACTIVITY_MODE
+          value: disable
+          isEnabled: false
+    test:
+      config: Debug
+      gatherCoverageData: true
+      coverageTargets:
+        - MindFlow
+      targets:
+        - name: MindFlowTests
+          parallelizable: true
+          randomExecutionOrder: true
+        - name: MindFlowUITests
+          parallelizable: false
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release
+      
+fileGroups:
+  - MindFlow
+  - MindFlowWidget
+  - MindFlowNotificationService
+  - Tests
+  - Assets.xcassets
+
+configFiles:
+  Debug: Config/Debug.xcconfig
+  Release: Config/Release.xcconfig
