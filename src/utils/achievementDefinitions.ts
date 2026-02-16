@@ -1,369 +1,415 @@
 import { Achievement } from '../models/Achievement';
 
-export const ACHIEVEMENT_DEFINITIONS: Achievement[] = [
+export interface AchievementDefinition {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+  category: 'sessions' | 'streak' | 'emotions' | 'time' | 'special';
+  tier: 'bronze' | 'silver' | 'gold' | 'platinum';
+  requirement: number;
+  checkProgress: (stats: AchievementStats) => number;
+}
+
+export interface AchievementStats {
+  totalSessions: number;
+  currentStreak: number;
+  longestStreak: number;
+  totalMinutes: number;
+  emotionsExplored: string[];
+  sessionsPerEmotion: Record<string, number>;
+  consecutiveDays: number;
+  perfectWeeks: number;
+  morningSessions: number;
+  eveningSessions: number;
+  weekendSessions: number;
+  firstSessionDate?: Date;
+  lastSessionDate?: Date;
+}
+
+export const ACHIEVEMENT_DEFINITIONS: AchievementDefinition[] = [
+  // Session-based achievements
   {
-    id: 'first_session',
-    type: 'milestone',
-    title: 'Первый шаг',
-    description: 'Завершите вашу первую сессию фокуса',
-    icon: '🚀',
-    reward: 10,
-    condition: (stats) => stats.totalSessions >= 1,
-    rarity: 'common',
+    id: 'first_steps',
+    title: 'Первые шаги',
+    description: 'Завершите первую сессию',
+    icon: '🎯',
+    category: 'sessions',
+    tier: 'bronze',
+    requirement: 1,
+    checkProgress: (stats) => stats.totalSessions,
   },
   {
-    id: 'five_sessions',
-    type: 'milestone',
-    title: 'Пять сессий',
-    description: 'Завершите 5 сессий фокуса',
-    icon: '⭐',
-    reward: 25,
-    condition: (stats) => stats.totalSessions >= 5,
-    rarity: 'common',
+    id: 'getting_started',
+    title: 'Начало пути',
+    description: 'Завершите 5 сессий',
+    icon: '🌱',
+    category: 'sessions',
+    tier: 'bronze',
+    requirement: 5,
+    checkProgress: (stats) => stats.totalSessions,
   },
   {
-    id: 'ten_sessions',
-    type: 'milestone',
-    title: 'Десять сессий',
-    description: 'Завершите 10 сессий фокуса',
-    icon: '✨',
-    reward: 50,
-    condition: (stats) => stats.totalSessions >= 10,
-    rarity: 'uncommon',
-  },
-  {
-    id: 'twenty_sessions',
-    type: 'milestone',
-    title: 'Двадцать сессий',
-    description: 'Завершите 20 сессий фокуса',
-    icon: '🌟',
-    reward: 100,
-    condition: (stats) => stats.totalSessions >= 20,
-    rarity: 'uncommon',
-  },
-  {
-    id: 'fifty_sessions',
-    type: 'milestone',
-    title: 'Полусотня',
-    description: 'Завершите 50 сессий фокуса',
-    icon: '👑',
-    reward: 250,
-    condition: (stats) => stats.totalSessions >= 50,
-    rarity: 'rare',
-  },
-  {
-    id: 'hundred_sessions',
-    type: 'milestone',
-    title: 'Столетие',
-    description: 'Завершите 100 сессий фокуса',
-    icon: '💎',
-    reward: 500,
-    condition: (stats) => stats.totalSessions >= 100,
-    rarity: 'epic',
-  },
-  {
-    id: 'one_hour_focus',
-    type: 'duration',
-    title: 'Час фокуса',
-    description: 'Наберите 60 минут фокуса',
-    icon: '⏱️',
-    reward: 50,
-    condition: (stats) => stats.totalFocusTime >= 60,
-    rarity: 'uncommon',
-  },
-  {
-    id: 'five_hours_focus',
-    type: 'duration',
-    title: 'Пять часов',
-    description: 'Наберите 5 часов фокуса',
-    icon: '🔥',
-    reward: 150,
-    condition: (stats) => stats.totalFocusTime >= 300,
-    rarity: 'uncommon',
-  },
-  {
-    id: 'ten_hours_focus',
-    type: 'duration',
-    title: 'Десять часов',
-    description: 'Наберите 10 часов фокуса',
-    icon: '⚡',
-    reward: 300,
-    condition: (stats) => stats.totalFocusTime >= 600,
-    rarity: 'rare',
-  },
-  {
-    id: 'fifty_hours_focus',
-    type: 'duration',
-    title: 'Пятьдесят часов',
-    description: 'Наберите 50 часов фокуса',
-    icon: '🌠',
-    reward: 750,
-    condition: (stats) => stats.totalFocusTime >= 3000,
-    rarity: 'epic',
-  },
-  {
-    id: 'hundred_hours_focus',
-    type: 'duration',
-    title: 'Сотня часов',
-    description: 'Наберите 100 часов фокуса',
-    icon: '🏆',
-    reward: 1500,
-    condition: (stats) => stats.totalFocusTime >= 6000,
-    rarity: 'legendary',
-  },
-  {
-    id: 'three_day_streak',
-    type: 'streak',
-    title: 'Три дня подряд',
-    description: 'Завершите сессии 3 дня подряд',
-    icon: '🔗',
-    reward: 75,
-    condition: (stats) => stats.currentStreak >= 3,
-    rarity: 'uncommon',
-  },
-  {
-    id: 'seven_day_streak',
-    type: 'streak',
-    title: 'Неделя фокуса',
-    description: 'Завершите сессии 7 дней подряд',
-    icon: '🌈',
-    reward: 200,
-    condition: (stats) => stats.currentStreak >= 7,
-    rarity: 'rare',
-  },
-  {
-    id: 'fourteen_day_streak',
-    type: 'streak',
-    title: 'Две недели',
-    description: 'Завершите сессии 14 дней подряд',
+    id: 'committed',
+    title: 'Преданность делу',
+    description: 'Завершите 10 сессий',
     icon: '💪',
-    reward: 400,
-    condition: (stats) => stats.currentStreak >= 14,
-    rarity: 'epic',
+    category: 'sessions',
+    tier: 'silver',
+    requirement: 10,
+    checkProgress: (stats) => stats.totalSessions,
   },
   {
-    id: 'thirty_day_streak',
-    type: 'streak',
-    title: 'Месячный марафон',
-    description: 'Завершите сессии 30 дней подряд',
-    icon: '🎯',
-    reward: 1000,
-    condition: (stats) => stats.currentStreak >= 30,
-    rarity: 'legendary',
+    id: 'dedicated',
+    title: 'Целеустремленность',
+    description: 'Завершите 25 сессий',
+    icon: '🏆',
+    category: 'sessions',
+    tier: 'silver',
+    requirement: 25,
+    checkProgress: (stats) => stats.totalSessions,
   },
   {
-    id: 'level_five',
-    type: 'level',
-    title: 'Уровень 5',
-    description: 'Достигните уровня 5',
-    icon: '📈',
-    reward: 100,
-    condition: (stats) => stats.level >= 5,
-    rarity: 'uncommon',
+    id: 'veteran',
+    title: 'Ветеран',
+    description: 'Завершите 50 сессий',
+    icon: '⭐',
+    category: 'sessions',
+    tier: 'gold',
+    requirement: 50,
+    checkProgress: (stats) => stats.totalSessions,
   },
   {
-    id: 'level_ten',
-    type: 'level',
-    title: 'Уровень 10',
-    description: 'Достигните уровня 10',
-    icon: '⬆️',
-    reward: 250,
-    condition: (stats) => stats.level >= 10,
-    rarity: 'rare',
-  },
-  {
-    id: 'level_twenty',
-    type: 'level',
-    title: 'Уровень 20',
-    description: 'Достигните уровня 20',
-    icon: '🚀',
-    reward: 500,
-    condition: (stats) => stats.level >= 20,
-    rarity: 'epic',
-  },
-  {
-    id: 'level_fifty',
-    type: 'level',
-    title: 'Уровень 50',
-    description: 'Достигните уровня 50',
+    id: 'master',
+    title: 'Мастер практики',
+    description: 'Завершите 100 сессий',
     icon: '👑',
-    reward: 1500,
-    condition: (stats) => stats.level >= 50,
-    rarity: 'legendary',
+    category: 'sessions',
+    tier: 'gold',
+    requirement: 100,
+    checkProgress: (stats) => stats.totalSessions,
   },
   {
-    id: 'daily_goal_once',
-    type: 'goal',
-    title: 'Дневная цель',
-    description: 'Достигните дневную цель один раз',
-    icon: '🎯',
-    reward: 50,
-    condition: (stats) => stats.dailyGoalsCompleted >= 1,
-    rarity: 'common',
+    id: 'legend',
+    title: 'Легенда',
+    description: 'Завершите 250 сессий',
+    icon: '💎',
+    category: 'sessions',
+    tier: 'platinum',
+    requirement: 250,
+    checkProgress: (stats) => stats.totalSessions,
   },
   {
-    id: 'daily_goal_week',
-    type: 'goal',
-    title: 'Неделя целей',
-    description: 'Достигните дневную цель 7 дней подряд',
-    icon: '📅',
-    reward: 200,
-    condition: (stats) => stats.dailyGoalsCompleted >= 7,
-    rarity: 'uncommon',
+    id: 'enlightened',
+    title: 'Просветленный',
+    description: 'Завершите 500 сессий',
+    icon: '✨',
+    category: 'sessions',
+    tier: 'platinum',
+    requirement: 500,
+    checkProgress: (stats) => stats.totalSessions,
+  },
+
+  // Streak-based achievements
+  {
+    id: 'two_day_streak',
+    title: 'Два дня подряд',
+    description: 'Практикуйте 2 дня подряд',
+    icon: '🔥',
+    category: 'streak',
+    tier: 'bronze',
+    requirement: 2,
+    checkProgress: (stats) => stats.currentStreak,
   },
   {
-    id: 'daily_goal_month',
-    type: 'goal',
-    title: 'Месячная цель',
-    description: 'Достигните дневную цель 30 дней подряд',
-    icon: '🏅',
-    reward: 500,
-    condition: (stats) => stats.dailyGoalsCompleted >= 30,
-    rarity: 'rare',
+    id: 'week_warrior',
+    title: 'Воин недели',
+    description: 'Практикуйте 7 дней подряд',
+    icon: '🔥',
+    category: 'streak',
+    tier: 'silver',
+    requirement: 7,
+    checkProgress: (stats) => stats.currentStreak,
   },
   {
-    id: 'perfect_session',
-    type: 'special',
-    title: 'Идеальная сессия',
-    description: 'Завершите сессию без пауз',
-    icon: '✅',
-    reward: 75,
-    condition: (stats) => stats.perfectSessions >= 1,
-    rarity: 'uncommon',
+    id: 'two_week_streak',
+    title: 'Две недели силы',
+    description: 'Практикуйте 14 дней подряд',
+    icon: '🔥',
+    category: 'streak',
+    tier: 'silver',
+    requirement: 14,
+    checkProgress: (stats) => stats.currentStreak,
   },
   {
-    id: 'five_perfect_sessions',
-    type: 'special',
-    title: 'Пять совершенств',
-    description: 'Завершите 5 сессий без пауз',
-    icon: '💯',
-    reward: 200,
-    condition: (stats) => stats.perfectSessions >= 5,
-    rarity: 'rare',
+    id: 'month_master',
+    title: 'Мастер месяца',
+    description: 'Практикуйте 30 дней подряд',
+    icon: '🔥',
+    category: 'streak',
+    tier: 'gold',
+    requirement: 30,
+    checkProgress: (stats) => stats.currentStreak,
   },
+  {
+    id: 'unstoppable',
+    title: 'Неудержимый',
+    description: 'Практикуйте 60 дней подряд',
+    icon: '🔥',
+    category: 'streak',
+    tier: 'gold',
+    requirement: 60,
+    checkProgress: (stats) => stats.currentStreak,
+  },
+  {
+    id: 'century_streak',
+    title: 'Столетие практики',
+    description: 'Практикуйте 100 дней подряд',
+    icon: '🔥',
+    category: 'streak',
+    tier: 'platinum',
+    requirement: 100,
+    checkProgress: (stats) => stats.currentStreak,
+  },
+  {
+    id: 'year_champion',
+    title: 'Чемпион года',
+    description: 'Практикуйте 365 дней подряд',
+    icon: '🔥',
+    category: 'streak',
+    tier: 'platinum',
+    requirement: 365,
+    checkProgress: (stats) => stats.currentStreak,
+  },
+
+  // Emotion exploration achievements
+  {
+    id: 'emotion_explorer',
+    title: 'Исследователь эмоций',
+    description: 'Изучите 3 разные эмоции',
+    icon: '🎭',
+    category: 'emotions',
+    tier: 'bronze',
+    requirement: 3,
+    checkProgress: (stats) => stats.emotionsExplored.length,
+  },
+  {
+    id: 'emotion_specialist',
+    title: 'Специалист эмоций',
+    description: 'Изучите 5 разных эмоций',
+    icon: '🎨',
+    category: 'emotions',
+    tier: 'silver',
+    requirement: 5,
+    checkProgress: (stats) => stats.emotionsExplored.length,
+  },
+  {
+    id: 'emotion_master',
+    title: 'Мастер эмоций',
+    description: 'Изучите все 8 эмоций',
+    icon: '🌈',
+    category: 'emotions',
+    tier: 'gold',
+    requirement: 8,
+    checkProgress: (stats) => stats.emotionsExplored.length,
+  },
+  {
+    id: 'anxiety_warrior',
+    title: 'Воин спокойствия',
+    description: 'Завершите 10 сессий с тревогой',
+    icon: '🧘',
+    category: 'emotions',
+    tier: 'silver',
+    requirement: 10,
+    checkProgress: (stats) => stats.sessionsPerEmotion['anxiety'] || 0,
+  },
+  {
+    id: 'stress_buster',
+    title: 'Победитель стресса',
+    description: 'Завершите 10 сессий со стрессом',
+    icon: '💆',
+    category: 'emotions',
+    tier: 'silver',
+    requirement: 10,
+    checkProgress: (stats) => stats.sessionsPerEmotion['stress'] || 0,
+  },
+  {
+    id: 'sadness_healer',
+    title: 'Целитель грусти',
+    description: 'Завершите 10 сессий с грустью',
+    icon: '🌸',
+    category: 'emotions',
+    tier: 'silver',
+    requirement: 10,
+    checkProgress: (stats) => stats.sessionsPerEmotion['sadness'] || 0,
+  },
+  {
+    id: 'anger_tamer',
+    title: 'Укротитель гнева',
+    description: 'Завершите 10 сессий с гневом',
+    icon: '🕊️',
+    category: 'emotions',
+    tier: 'silver',
+    requirement: 10,
+    checkProgress: (stats) => stats.sessionsPerEmotion['anger'] || 0,
+  },
+  {
+    id: 'fear_conqueror',
+    title: 'Победитель страха',
+    description: 'Завершите 10 сессий со страхом',
+    icon: '🦁',
+    category: 'emotions',
+    tier: 'silver',
+    requirement: 10,
+    checkProgress: (stats) => stats.sessionsPerEmotion['fear'] || 0,
+  },
+
+  // Time-based achievements
+  {
+    id: 'first_hour',
+    title: 'Первый час',
+    description: 'Практикуйте 60 минут в сумме',
+    icon: '⏰',
+    category: 'time',
+    tier: 'bronze',
+    requirement: 60,
+    checkProgress: (stats) => stats.totalMinutes,
+  },
+  {
+    id: 'five_hours',
+    title: 'Пять часов практики',
+    description: 'Практикуйте 300 минут в сумме',
+    icon: '⏳',
+    category: 'time',
+    tier: 'silver',
+    requirement: 300,
+    checkProgress: (stats) => stats.totalMinutes,
+  },
+  {
+    id: 'ten_hours',
+    title: 'Десять часов мастерства',
+    description: 'Практикуйте 600 минут в сумме',
+    icon: '⌚',
+    category: 'time',
+    tier: 'gold',
+    requirement: 600,
+    checkProgress: (stats) => stats.totalMinutes,
+  },
+  {
+    id: 'twenty_hours',
+    title: 'Двадцать часов посвящения',
+    description: 'Практикуйте 1200 минут в сумме',
+    icon: '🕰️',
+    category: 'time',
+    tier: 'gold',
+    requirement: 1200,
+    checkProgress: (stats) => stats.totalMinutes,
+  },
+  {
+    id: 'fifty_hours',
+    title: 'Пятьдесят часов преданности',
+    description: 'Практикуйте 3000 минут в сумме',
+    icon: '⏱️',
+    category: 'time',
+    tier: 'platinum',
+    requirement: 3000,
+    checkProgress: (stats) => stats.totalMinutes,
+  },
+
+  // Special achievements
   {
     id: 'early_bird',
-    type: 'special',
-    title: 'Жаворонок',
-    description: 'Завершите сессию до 9:00 утра',
+    title: 'Ранняя пташка',
+    description: 'Завершите 10 утренних сессий (до 9:00)',
     icon: '🌅',
-    reward: 50,
-    condition: (stats) => stats.earlyBirdSessions >= 1,
-    rarity: 'uncommon',
+    category: 'special',
+    tier: 'silver',
+    requirement: 10,
+    checkProgress: (stats) => stats.morningSession,
   },
   {
     id: 'night_owl',
-    type: 'special',
-    title: 'Сова',
-    description: 'Завершите сессию после 21:00 вечера',
+    title: 'Ночная сова',
+    description: 'Завершите 10 вечерних сессий (после 21:00)',
     icon: '🌙',
-    reward: 50,
-    condition: (stats) => stats.nightOwlSessions >= 1,
-    rarity: 'uncommon',
+    category: 'special',
+    tier: 'silver',
+    requirement: 10,
+    checkProgress: (stats) => stats.eveningSessions,
   },
   {
-    id: 'consistent_user',
-    type: 'special',
-    title: 'Постоянный пользователь',
-    description: 'Используйте приложение 30 дней подряд',
-    icon: '📱',
-    reward: 300,
-    condition: (stats) => stats.consistentDays >= 30,
-    rarity: 'rare',
+    id: 'weekend_warrior',
+    title: 'Воин выходных',
+    description: 'Завершите 10 сессий в выходные',
+    icon: '🎉',
+    category: 'special',
+    tier: 'silver',
+    requirement: 10,
+    checkProgress: (stats) => stats.weekendSessions,
   },
   {
-    id: 'break_master',
-    type: 'special',
-    title: 'Мастер перерывов',
-    description: 'Завершите 50 перерывов',
-    icon: '☕',
-    reward: 150,
-    condition: (stats) => stats.totalBreaks >= 50,
-    rarity: 'uncommon',
+    id: 'perfect_week',
+    title: 'Идеальная неделя',
+    description: 'Практикуйте каждый день недели',
+    icon: '📅',
+    category: 'special',
+    tier: 'gold',
+    requirement: 1,
+    checkProgress: (stats) => stats.perfectWeeks,
   },
   {
-    id: 'focus_master',
-    type: 'special',
-    title: 'Мастер фокуса',
-    description: 'Завершите 100 сессий подряд без перерыва в неделю',
-    icon: '🧠',
-    reward: 400,
-    condition: (stats) => stats.totalSessions >= 100 && stats.currentStreak >= 7,
-    rarity: 'epic',
+    id: 'consistency_king',
+    title: 'Король постоянства',
+    description: 'Достигните 4 идеальных недель',
+    icon: '👑',
+    category: 'special',
+    tier: 'platinum',
+    requirement: 4,
+    checkProgress: (stats) => stats.perfectWeeks,
   },
   {
-    id: 'speed_demon',
-    type: 'special',
-    title: 'Скоростной демон',
-    description: 'Завершите 10 сессий за один день',
-    icon: '⚡',
-    reward: 250,
-    condition: (stats) => stats.sessionsTodayCount >= 10,
-    rarity: 'rare',
+    id: 'quick_learner',
+    title: 'Быстрый ученик',
+    description: 'Завершите 5 сессий за первую неделю',
+    icon: '🚀',
+    category: 'special',
+    tier: 'bronze',
+    requirement: 5,
+    checkProgress: (stats) => {
+      if (!stats.firstSessionDate) return 0;
+      const daysSinceFirst = Math.floor(
+        (Date.now() - stats.firstSessionDate.getTime()) / (1000 * 60 * 60 * 24)
+      );
+      return daysSinceFirst <= 7 ? stats.totalSessions : 0;
+    },
   },
-];
-
-export const getAchievementById = (id: string): Achievement | undefined => {
-  return ACHIEVEMENT_DEFINITIONS.find((achievement) => achievement.id === id);
-};
-
-export const checkAchievements = (stats: any): string[] => {
-  const unlockedAchievements: string[] = [];
-
-  ACHIEVEMENT_DEFINITIONS.forEach((achievement) => {
-    if (achievement.condition(stats)) {
-      unlockedAchievements.push(achievement.id);
-    }
-  });
-
-  return unlockedAchievements;
-};
-
-export const getAchievementsByRarity = (rarity: string): Achievement[] => {
-  return ACHIEVEMENT_DEFINITIONS.filter((achievement) => achievement.rarity === rarity);
-};
-
-export const getAchievementsByType = (type: string): Achievement[] => {
-  return ACHIEVEMENT_DEFINITIONS.filter((achievement) => achievement.type === type);
-};
-
-export const getTotalReward = (achievementIds: string[]): number => {
-  return achievementIds.reduce((total, id) => {
-    const achievement = getAchievementById(id);
-    return total + (achievement?.reward || 0);
-  }, 0);
-};
-
-export const getNextAchievements = (stats: any, limit: number = 5): Achievement[] => {
-  const locked = ACHIEVEMENT_DEFINITIONS.filter((achievement) => !achievement.condition(stats));
-  return locked.slice(0, limit);
-};
-
-export const getAchievementProgress = (achievement: Achievement, stats: any): number => {
-  switch (achievement.type) {
-    case 'milestone':
-      if (achievement.id.includes('session')) {
-        const target = parseInt(achievement.title.match(/\d+/)?.[0] || '1');
-        return Math.min((stats.totalSessions / target) * 100, 100);
-      }
-      break;
-    case 'duration':
-      if (achievement.id.includes('hour')) {
-        const target = parseInt(achievement.title.match(/\d+/)?.[0] || '1') * 60;
-        return Math.min((stats.totalFocusTime / target) * 100, 100);
-      }
-      break;
-    case 'streak':
-      if (achievement.id.includes('day')) {
-        const target = parseInt(achievement.title.match(/\d+/)?.[0] || '1');
-        return Math.min((stats.currentStreak / target) * 100, 100);
-      }
-      break;
-    case 'level':
-      const levelTarget = parseInt(achievement.title.match(/\d+/)?.[0] || '1');
-      return Math.min((stats.level / levelTarget) * 100, 100);
-    default:
-      return achievement.condition(stats) ? 100 : 0;
-  }
-  return 0;
-};
+  {
+    id: 'comeback_kid',
+    title: 'Возвращение',
+    description: 'Вернитесь к практике после перерыва в 30+ дней',
+    icon: '🔄',
+    category: 'special',
+    tier: 'silver',
+    requirement: 1,
+    checkProgress: (stats) => {
+      if (!stats.lastSessionDate || !stats.firstSessionDate) return 0;
+      const daysSinceLast = Math.floor(
+        (Date.now() - stats.lastSessionDate.getTime()) / (1000 * 60 * 60 * 24)
+      );
+      return daysSinceLast >= 30 && stats.totalSessions > 10 ? 1 : 0;
+    },
+  },
+  {
+    id: 'marathon_session',
+    title: 'Марафон',
+    description: 'Завершите сессию длительностью 30+ минут',
+    icon: '🏃',
+    category: 'special',
+    tier: 'gold',
+    requirement: 1,
+    checkProgress: () => 0, // Checked separately per session
+  },
+  {
+    id: 'zen_master',
+    title: 'Дзен мастер',
+    description: 'Достигните идеального показателя спок
