@@ -31,6 +31,27 @@ export type MainTabParamList = {
   Settings: undefined;
 };
 
+export type HomeStackParamList = {
+  Home: undefined;
+  EmotionPicker: undefined;
+  ExerciseList: {
+    emotionId: string;
+    emotionName: string;
+  };
+  ExerciseSession: {
+    exerciseId: string;
+    exerciseName: string;
+    emotionId: string;
+  };
+  SessionResult: {
+    sessionId: string;
+    exerciseId: string;
+    exerciseName: string;
+    duration: number;
+    completedAt: Date;
+  };
+};
+
 export type HomeScreenNavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<MainTabParamList, 'Home'>,
   StackNavigationProp<RootStackParamList>

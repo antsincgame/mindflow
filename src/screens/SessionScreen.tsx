@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
+  Text,
   StyleSheet,
   SafeAreaView,
   StatusBar,
@@ -16,7 +17,7 @@ import SessionControls from '../components/SessionControls';
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
-import { SoundService } from '../services/SoundService';
+import SoundService from '../services/SoundService';
 import { NotificationService } from '../services/NotificationService';
 import { SessionService } from '../services/SessionService';
 
@@ -62,7 +63,7 @@ export const SessionScreen: React.FC<SessionScreenProps> = ({
         await startSession(taskName, initialDuration);
         setSessionStartTime(new Date());
         startTimer();
-        await SoundService.playSessionStartSound();
+        await SoundService.playSessionComplete();
       };
 
       initializeSession();
@@ -102,11 +103,11 @@ export const SessionScreen: React.FC<SessionScreenProps> = ({
     if (isRunning) {
       pauseTimer();
       await pauseSession();
-      await SoundService.playPauseSound();
+      await SoundService.playButtonPress();
     } else {
       startTimer();
       await resumeSession();
-      await SoundService.playResumeSound();
+      await SoundService.playButtonPress();
     }
   }, [isRunning, pauseTimer, startTimer, pauseSession, resumeSession]);
 
@@ -115,7 +116,7 @@ export const SessionScreen: React.FC<SessionScreenProps> = ({
     resetTimer();
     await stopSession();
     await unblockNotifications();
-    await SoundService.playSessionCompleteSound();
+    await SoundService.playSessionComplete();
 
     const sessionDuration = sessionStartTime
       ? Math.floor((new Date().getTime() - sessionStartTime.getTime()) / 1000)
@@ -287,9 +288,9 @@ const Typography: React.FC<TypographyProps> = ({
   };
 
   return (
-    <View style={[getStyles(), { color }, style]}>
+    <Text style={[getStyles(), { color }, style]}>
       {children}
-    </View>
+    </Text>
   );
 };
 

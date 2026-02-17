@@ -16,10 +16,10 @@ import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/dat
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { HomeStackParamList } from '@navigation/types';
-import { HealthKitService } from '@services/HealthKitService';
-import { NotificationService } from '@services/NotificationService';
-import { StorageService } from '@services/StorageService';
+import type { HomeStackParamList } from '../navigation/types';
+import HealthKitService from '../services/HealthKitService';
+import { NotificationService } from '../services/NotificationService';
+import { StorageService } from '../services/StorageService';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -121,10 +121,10 @@ const OnboardingScreen: React.FC = () => {
 
   const completeOnboarding = useCallback(async () => {
     try {
-      await StorageService.save('onboarding_completed', true);
-      await StorageService.save('preferred_practice_time', preferredTime.toISOString());
-      await StorageService.save('healthkit_granted', healthKitGranted);
-      await StorageService.save('notifications_granted', notificationsGranted);
+      await StorageService.setItem('onboarding_completed', true);
+      await StorageService.setItem('preferred_practice_time', preferredTime.toISOString());
+      await StorageService.setItem('healthkit_granted', healthKitGranted);
+      await StorageService.setItem('notifications_granted', notificationsGranted);
     } catch (error) {
       console.warn('Failed to save onboarding settings:', error);
     }
@@ -379,4 +379,202 @@ const OnboardingScreen: React.FC = () => {
           showsHorizontalScrollIndicator={false}
           onViewableItemsChanged={onViewableItemsChanged}
           viewabilityConfig={viewabilityConfig}
-          scrollEventThrot
+          scrollEventThrottleInterval={16}
+          scrollEnabled={false}
+        />
+
+        {renderPaginationDots()}
+
+        <View style={styles.bottomContainer}>
+          {isLastStep ? (
+            <TouchableOpacity
+              style={[styles.button, styles.buttonPrimary]}
+              onPress={completeOnboarding}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.buttonPrimaryText}>Начать</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={[styles.button, styles.buttonPrimary]}
+              onPress={handleNext}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.buttonPrimaryText}>Далее</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </SafeAreaView>
+    </LinearGradient>
+  );
+};
+
+const styles = StyleSheet.create({
+  gradient: {
+    flex: 1,
+  },
+  container: {
+    flex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    paddingHorizontal: 20,
+    paddingTop: 8,
+  },
+  skipText: {
+    fontSize: 16,
+    color: '#6C5CE7',
+  },
+  skipPlaceholder: {
+    height: 20,
+  },
+  stepContainer: {
+    width: SCREEN_WIDTH,
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+  },
+  stepContent: {
+    alignItems: 'center',
+  },
+  emoji: {
+    fontSize: 64,
+    marginBottom: 24,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#2D3436',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#636E72',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  description: {
+    fontSize: 14,
+    color: '#636E72',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  paginationContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    paddingVertical: 16,
+  },
+  paginationDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#D1D5DB',
+    marginHorizontal: 4,
+  },
+  paginationDotActive: {
+    backgroundColor: '#6C5CE7',
+    width: 24,
+  },
+  bottomContainer: {
+    paddingHorizontal: 32,
+    paddingBottom: 24,
+  },
+  button: {
+    borderRadius: 16,
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  buttonPrimary: {
+    backgroundColor: '#6C5CE7',
+  },
+  buttonPrimaryText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  permissionContainer: {
+    marginTop: 16,
+    alignItems: 'center',
+  },
+  permissionGranted: {
+    color: '#00B894',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  permissionButton: {
+    backgroundColor: '#6C5CE7',
+    borderRadius: 12,
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+  },
+  permissionButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  timeButton: {
+    marginTop: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+  },
+  timeButtonText: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: '#6C5CE7',
+  },
+  timeButtonSubtext: {
+    fontSize: 12,
+    color: '#636E72',
+    marginTop: 4,
+  },
+  timePicker: {
+    marginTop: 8,
+  },
+  timePresetsContainer: {
+    marginTop: 16,
+    alignItems: 'center',
+  },
+  timePresetsTitle: {
+    fontSize: 14,
+    color: '#636E72',
+    marginBottom: 8,
+  },
+  timePresetsRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  timePresetButton: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+  },
+  timePresetButtonActive: {
+    backgroundColor: '#6C5CE7',
+  },
+  timePresetText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#2D3436',
+  },
+  timePresetTextActive: {
+    color: '#FFFFFF',
+  },
+  timePresetHour: {
+    fontSize: 12,
+    color: '#636E72',
+    marginTop: 2,
+  },
+  timePresetHourActive: {
+    color: 'rgba(255,255,255,0.7)',
+  },
+});
+
+export default OnboardingScreen;

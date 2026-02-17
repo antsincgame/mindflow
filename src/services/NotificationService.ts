@@ -45,4 +45,21 @@ export class NotificationService {
   static async cancelScheduledNotification(identifier: string): Promise<void> {
     await Notifications.cancelScheduledNotificationAsync(identifier);
   }
+
+  static async requestPermissions(): Promise<boolean> {
+    try {
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      let finalStatus = existingStatus;
+
+      if (existingStatus !== 'granted') {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+      }
+
+      return finalStatus === 'granted';
+    } catch (error) {
+      console.error('NotificationService.requestPermissions error:', error);
+      return false;
+    }
+  }
 }
