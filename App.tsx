@@ -28,7 +28,7 @@ const AppContent: React.FC = () => {
     <>
       <StatusBar
         barStyle={isDark ? 'light-content' : 'dark-content'}
-        backgroundColor={theme.background}
+        backgroundColor={theme.colors.background}
       />
       <NavigationContainer>
         <AppNavigator />

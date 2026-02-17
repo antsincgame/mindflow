@@ -13,10 +13,10 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.generated.mindflow",
+      "entitlements": {},
       "infoPlist": {
         "NSCalendarsUsageDescription": "Это приложение использует календарь для планирования задач и напоминаний.",
-        "NSRemindersUsageDescription": "Это приложение использует напоминания для уведомлений о задачах.",
-        "NSUserNotificationsUsageDescription": "Это приложение отправляет уведомления для напоминаний о задачах и сессиях."
+        "NSRemindersUsageDescription": "Это приложение использует напоминания для уведомлений о задачах."
       }
     },
     "android": {
@@ -31,6 +31,11 @@
         "android.permission.VIBRATE",
         "android.permission.POST_NOTIFICATIONS"
       ]
-    }
+    },
+    "plugins": [
+      "expo-sqlite",
+      "@react-native-community/datetimepicker",
+      "expo-asset"
+    ]
   }
 }
