@@ -1,17 +1,15 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  Animated,
   Platform,
 } from 'react-native';
-import Sound from 'react-native-sound';
-import Icon from 'react-native-vector-icons/Ionicons';
+import { Audio } from 'expo-av';
+import { Asset } from 'expo-asset';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../hooks/useTheme';
-
-Sound.setCategory('Playback', true);
 
 export interface AudioTrack {
   id: string;
@@ -36,7 +34,7 @@ interface AudioPlayerProps {
 }
 
 interface TrackState {
-  sound: Sound | null;
+  sound: Audio.Sound | null;
   isLoaded: boolean;
   isPlaying: boolean;
   duration: number;
@@ -76,165 +74,97 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
     volume: initialMusicVolume,
   });
 
-  const [isMuted, setIsMuted] = useState(false);
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-  const progressInterval = useRef<ReturnType<typeof setInterval> | null>(null);
-  const voiceSoundRef = useRef<Sound | null>(null);
-  const musicSoundRef = useRef<Sound | null>(null);
-
   const loadTrack = useCallback(
-    (track: AudioTrack, isVoice: boolean): Promise<Sound> => {
-      return new Promise((resolve, reject) => {
-        const callback = (error: Error | null, sound: Sound) => {
-          if (error) {
-            onError?.(`Failed to load ${track.title}: ${error.message}`);
-            reject(error);
-            return;
+    async (track: AudioTrack, isVoice: boolean): Promise<void> => {
+      try {
+        let source;
+        if (track.isLocal) {
+          const asset = Asset.fromModule(require('../../assets/icon.png'));
+          await asset.downloadAsync();
+          source = { uri: asset.localUri || asset.uri };
+        } else {
+          source = { uri: track.filePath };
+        }
+
+        const { sound } = await Audio.Sound.createAsync(
+          source,
+          {
+            shouldPlay: false,
+            volume: isVoice ? initialVoiceVolume : initialMusicVolume,
+            isLooping: track.loop || false,
           }
+        );
 
-          const duration = sound.getDuration();
-          const volume = isVoice ? initialVoiceVolume : initialMusicVolume;
-          sound.setVolume(volume);
-
-          if (track.loop) {
-            sound.setNumberOfLoops(-1);
-          }
-
+        const status = await sound.getStatusAsync();
+        if (status.isLoaded) {
+          const duration = status.durationMillis ? status.durationMillis / 1000 : 0;
+          
           if (isVoice) {
-            voiceSoundRef.current = sound;
             setVoiceState((prev) => ({
               ...prev,
               sound,
               isLoaded: true,
               duration,
-              volume,
             }));
           } else {
-            musicSoundRef.current = sound;
             setMusicState((prev) => ({
               ...prev,
               sound,
               isLoaded: true,
               duration,
-              volume,
             }));
           }
-
-          resolve(sound);
-        };
-
-        if (track.isLocal) {
-          const sound = new Sound(track.filePath, Sound.MAIN_BUNDLE, (error) =>
-            callback(error, sound)
-          );
-        } else {
-          const sound = new Sound(track.filePath, '', (error) =>
-            callback(error, sound)
-          );
         }
-      });
+      } catch (error) {
+        onError?.(`Failed to load ${track.title}: ${error}`);
+      }
     },
     [initialVoiceVolume, initialMusicVolume, onError]
   );
 
   useEffect(() => {
     if (voiceTrack) {
-      loadTrack(voiceTrack, true).catch(() => {});
+      loadTrack(voiceTrack, true);
     }
-
     return () => {
-      if (voiceSoundRef.current) {
-        voiceSoundRef.current.stop();
-        voiceSoundRef.current.release();
-        voiceSoundRef.current = null;
+      if (voiceState.sound) {
+        voiceState.sound.unloadAsync();
       }
     };
   }, [voiceTrack?.id]);
 
   useEffect(() => {
     if (backgroundTrack) {
-      loadTrack(backgroundTrack, false).catch(() => {});
+      loadTrack(backgroundTrack, false);
     }
-
     return () => {
-      if (musicSoundRef.current) {
-        musicSoundRef.current.stop();
-        musicSoundRef.current.release();
-        musicSoundRef.current = null;
+      if (musicState.sound) {
+        musicState.sound.unloadAsync();
       }
     };
   }, [backgroundTrack?.id]);
 
-  const startProgressTracking = useCallback(() => {
-    if (progressInterval.current) {
-      clearInterval(progressInterval.current);
-    }
-
-    progressInterval.current = setInterval(() => {
-      if (voiceSoundRef.current) {
-        voiceSoundRef.current.getCurrentTime((seconds) => {
-          setVoiceState((prev) => ({ ...prev, currentTime: seconds }));
-        });
-      }
-      if (musicSoundRef.current) {
-        musicSoundRef.current.getCurrentTime((seconds) => {
-          setMusicState((prev) => ({ ...prev, currentTime: seconds }));
-        });
-      }
-    }, 500);
-  }, []);
-
-  const stopProgressTracking = useCallback(() => {
-    if (progressInterval.current) {
-      clearInterval(progressInterval.current);
-      progressInterval.current = null;
-    }
-  }, []);
-
-  const playAll = useCallback(() => {
-    if (voiceSoundRef.current && voiceState.isLoaded) {
-      voiceSoundRef.current.play((success) => {
-        if (success && voiceTrack) {
-          onTrackEnd?.(voiceTrack.id);
-        }
-        setVoiceState((prev) => ({ ...prev, isPlaying: false }));
-      });
+  const playAll = useCallback(async () => {
+    if (voiceState.sound && voiceState.isLoaded) {
+      await voiceState.sound.playAsync();
       setVoiceState((prev) => ({ ...prev, isPlaying: true }));
     }
-
-    if (musicSoundRef.current && musicState.isLoaded) {
-      musicSoundRef.current.play((success) => {
-        if (success && backgroundTrack) {
-          onTrackEnd?.(backgroundTrack.id);
-        }
-        setMusicState((prev) => ({ ...prev, isPlaying: false }));
-      });
+    if (musicState.sound && musicState.isLoaded) {
+      await musicState.sound.playAsync();
       setMusicState((prev) => ({ ...prev, isPlaying: true }));
     }
+  }, [voiceState.sound, voiceState.isLoaded, musicState.sound, musicState.isLoaded]);
 
-    startProgressTracking();
-  }, [
-    voiceState.isLoaded,
-    musicState.isLoaded,
-    voiceTrack,
-    backgroundTrack,
-    onTrackEnd,
-    startProgressTracking,
-  ]);
-
-  const pauseAll = useCallback(() => {
-    if (voiceSoundRef.current && voiceState.isPlaying) {
-      voiceSoundRef.current.pause();
+  const pauseAll = useCallback(async () => {
+    if (voiceState.sound && voiceState.isPlaying) {
+      await voiceState.sound.pauseAsync();
       setVoiceState((prev) => ({ ...prev, isPlaying: false }));
     }
-
-    if (musicSoundRef.current && musicState.isPlaying) {
-      musicSoundRef.current.pause();
+    if (musicState.sound && musicState.isPlaying) {
+      await musicState.sound.pauseAsync();
       setMusicState((prev) => ({ ...prev, isPlaying: false }));
     }
-
-    stopProgressTracking();
-  }, [voiceState.isPlaying, musicState.isPlaying, stopProgressTracking]);
+  }, [voiceState.sound, voiceState.isPlaying, musicState.sound, musicState.isPlaying]);
 
   useEffect(() => {
     if (isPlaying) {
@@ -244,241 +174,67 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
     }
   }, [isPlaying]);
 
-  useEffect(() => {
-    if (isPlaying) {
-      const pulse = Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, {
-            toValue: 1.15,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseAnim, {
-            toValue: 1,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-        ])
-      );
-      pulse.start();
-      return () => pulse.stop();
-    } else {
-      pulseAnim.setValue(1);
-    }
-  }, [isPlaying, pulseAnim]);
-
-  useEffect(() => {
-    return () => {
-      stopProgressTracking();
-      if (voiceSoundRef.current) {
-        voiceSoundRef.current.stop();
-        voiceSoundRef.current.release();
-        voiceSoundRef.current = null;
-      }
-      if (musicSoundRef.current) {
-        musicSoundRef.current.stop();
-        musicSoundRef.current.release();
-        musicSoundRef.current = null;
-      }
-    };
-  }, []);
-
-  const handleVoiceVolumeChange = useCallback(
-    (direction: 'up' | 'down') => {
-      setVoiceState((prev) => {
-        const delta = direction === 'up' ? 0.1 : -0.1;
-        const newVolume = Math.max(0, Math.min(1, prev.volume + delta));
-        if (voiceSoundRef.current) {
-          voiceSoundRef.current.setVolume(isMuted ? 0 : newVolume);
-        }
-        return { ...prev, volume: newVolume };
-      });
-    },
-    [isMuted]
-  );
-
-  const handleMusicVolumeChange = useCallback(
-    (direction: 'up' | 'down') => {
-      setMusicState((prev) => {
-        const delta = direction === 'up' ? 0.1 : -0.1;
-        const newVolume = Math.max(0, Math.min(1, prev.volume + delta));
-        if (musicSoundRef.current) {
-          musicSoundRef.current.setVolume(isMuted ? 0 : newVolume);
-        }
-        return { ...prev, volume: newVolume };
-      });
-    },
-    [isMuted]
-  );
-
-  const toggleMute = useCallback(() => {
-    const newMuted = !isMuted;
-    setIsMuted(newMuted);
-
-    if (voiceSoundRef.current) {
-      voiceSoundRef.current.setVolume(newMuted ? 0 : voiceState.volume);
-    }
-    if (musicSoundRef.current) {
-      musicSoundRef.current.setVolume(newMuted ? 0 : musicState.volume);
-    }
-  }, [isMuted, voiceState.volume, musicState.volume]);
-
-  const formatTime = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const getVolumeIcon = (volume: number): string => {
-    if (isMuted || volume === 0) return 'volume-mute';
-    if (volume < 0.3) return 'volume-low';
-    if (volume < 0.7) return 'volume-medium';
-    return 'volume-high';
-  };
-
-  const voiceProgress =
-    voiceState.duration > 0
-      ? voiceState.currentTime / voiceState.duration
-      : 0;
-
   if (compact) {
     return (
-      <View
-        style={[
-          styles.compactContainer,
-          { backgroundColor: colors.card || '#F5F5F5' },
-        ]}
-      >
+      <View style={[styles.compactContainer, { backgroundColor: colors.cardBackground || '#F5F5F5' }]}>
         <TouchableOpacity
           onPress={onPlayPause}
-          style={[
-            styles.compactPlayButton,
-            { backgroundColor: colors.primary || '#6C63FF' },
-          ]}
-          accessibilityLabel={isPlaying ? 'Пауза' : 'Воспроизвести'}
-          accessibilityRole="button"
+          style={[styles.compactPlayButton, { backgroundColor: colors.primary || '#6C63FF' }]}
         >
-          <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
-            <Icon
-              name={isPlaying ? 'pause' : 'play'}
-              size={18}
-              color="#FFFFFF"
-            />
-          </Animated.View>
+          <Ionicons name={isPlaying ? 'pause' : 'play'} size={18} color="#FFFFFF" />
         </TouchableOpacity>
-
         {voiceTrack && (
-          <View style={styles.compactInfo}>
-            <Text
-              style={[styles.compactTitle, { color: colors.text || '#333' }]}
-              numberOfLines={1}
-            >
-              {voiceTrack.title}
-            </Text>
-            <View
-              style={[
-                styles.compactProgressBar,
-                { backgroundColor: colors.border || '#E0E0E0' },
-              ]}
-            >
-              <View
-                style={[
-                  styles.compactProgressFill,
-                  {
-                    width: `${voiceProgress * 100}%`,
-                    backgroundColor: colors.primary || '#6C63FF',
-                  },
-                ]}
-              />
-            </View>
-          </View>
+          <Text style={[styles.compactTitle, { color: colors.text || '#333' }]}>
+            {voiceTrack.title}
+          </Text>
         )}
-
-        <TouchableOpacity
-          onPress={toggleMute}
-          style={styles.compactMuteButton}
-          accessibilityLabel={isMuted ? 'Включить звук' : 'Выключить звук'}
-          accessibilityRole="button"
-        >
-          <Icon
-            name={getVolumeIcon(voiceState.volume)}
-            size={20}
-            color={colors.textSecondary || '#999'}
-          />
-        </TouchableOpacity>
       </View>
     );
   }
 
   return (
-    <View
-      style={[
-        styles.container,
-        { backgroundColor: colors.card || '#F5F5F5' },
-      ]}
-    >
+    <View style={[styles.container, { backgroundColor: colors.cardBackground || '#F5F5F5' }]}>
       {showControls && (
-        <View style={styles.mainControls}>
-          <TouchableOpacity
-            onPress={onPlayPause}
-            style={[
-              styles.playButton,
-              { backgroundColor: colors.primary || '#6C63FF' },
-            ]}
-            accessibilityLabel={isPlaying ? 'Пауза' : 'Воспроизвести'}
-            accessibilityRole="button"
-          >
-            <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
-              <Icon
-                name={isPlaying ? 'pause' : 'play'}
-                size={28}
-                color="#FFFFFF"
-              />
-            </Animated.View>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={toggleMute}
-            style={styles.muteButton}
-            accessibilityLabel={isMuted ? 'Включить звук' : 'Выключить звук'}
-            accessibilityRole="button"
-          >
-            <Icon
-              name={getVolumeIcon(voiceState.volume)}
-              size={24}
-              color={colors.textSecondary || '#999'}
-            />
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity onPress={onPlayPause} style={styles.playButton}>
+          <Ionicons name={isPlaying ? 'pause' : 'play'} size={28} color="#FFFFFF" />
+        </TouchableOpacity>
       )}
+    </View>
+  );
+};
 
-      {voiceTrack && (
-        <View style={styles.trackSection}>
-          <View style={styles.trackHeader}>
-            <Icon
-              name="mic"
-              size={16}
-              color={colors.primary || '#6C63FF'}
-            />
-            <Text
-              style={[
-                styles.trackTitle,
-                { color: colors.text || '#333' },
-              ]}
-              numberOfLines={1}
-            >
-              {voiceTrack.title}
-            </Text>
-            <Text
-              style={[
-                styles.timeText,
-                { color: colors.textSecondary || '#999' },
-              ]}
-            >
-              {formatTime(voiceState.currentTime)} /{' '}
-              {formatTime(voiceState.duration)}
-            </Text>
-          </View>
+const styles = StyleSheet.create({
+  container: {
+    padding: 16,
+    borderRadius: 12,
+  },
+  compactContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 8,
+  },
+  compactPlayButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  compactTitle: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  playButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#6C63FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+});
 
-          <View
-            style={[
+export default AudioPlayer;

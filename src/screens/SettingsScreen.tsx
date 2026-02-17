@@ -4,154 +4,257 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  Switch,
   TouchableOpacity,
+  Switch,
   Alert,
   Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import * as Notifications from 'expo-notifications';
+import * as Calendar from 'expo-calendar';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../hooks/useTheme';
-import { StorageService } from '../services/StorageService';
-import { NotificationService } from '../services/NotificationService';
-import { HealthKitService } from '../services/HealthKitService';
-import { UserSettings } from '../models/UserSettings';
-import * as Haptics from 'expo-haptics';
+import { exportDatabase } from '../services/database';
 
-export const SettingsScreen: React.FC = () => {
+interface SettingItem {
+  id: string;
+  title: string;
+  description?: string;
+  type: 'toggle' | 'button' | 'info';
+  value?: boolean;
+  onPress?: () => void;
+  onToggle?: (value: boolean) => void;
+}
+
+const SettingsScreen: React.FC = () => {
+  const navigation = useNavigation();
   const { theme, isDark, toggleTheme } = useTheme();
-  const [settings, setSettings] = useState<UserSettings>({
-    notificationsEnabled: false,
-    dailyReminderTime: '09:00',
-    healthKitEnabled: false,
-    hapticFeedbackEnabled: true,
-    darkModeEnabled: false,
-    exerciseDuration: 5,
-    autoPlayAudio: true,
-    shareProgressEnabled: false,
-  });
 
-  const [isLoading, setIsLoading] = useState(true);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [taskReminders, setTaskReminders] = useState(true);
+  const [breakReminders, setBreakReminders] = useState(true);
+  const [moodReminders, setMoodReminders] = useState(true);
+  const [calendarSync, setCalendarSync] = useState(false);
+  const [autoTheme, setAutoTheme] = useState(false);
 
   useEffect(() => {
     loadSettings();
+    checkNotificationPermissions();
   }, []);
 
   const loadSettings = async () => {
     try {
-      const savedSettings = await StorageService.getSettings();
-      if (savedSettings) {
-        setSettings(savedSettings);
-      }
+      const settings = await AsyncStorage.multiGet([
+        'taskReminders',
+        'breakReminders',
+        'moodReminders',
+        'calendarSync',
+        'autoTheme',
+      ]);
+
+      settings.forEach(([key, value]) => {
+        const boolValue = value === 'true';
+        switch (key) {
+          case 'taskReminders':
+            setTaskReminders(boolValue);
+            break;
+          case 'breakReminders':
+            setBreakReminders(boolValue);
+            break;
+          case 'moodReminders':
+            setMoodReminders(boolValue);
+            break;
+          case 'calendarSync':
+            setCalendarSync(boolValue);
+            break;
+          case 'autoTheme':
+            setAutoTheme(boolValue);
+            break;
+        }
+      });
     } catch (error) {
       console.error('Error loading settings:', error);
-    } finally {
-      setIsLoading(false);
     }
   };
 
-  const saveSettings = async (newSettings: UserSettings) => {
+  const checkNotificationPermissions = async () => {
+    const { status } = await Notifications.getPermissionsAsync();
+    setNotificationsEnabled(status === 'granted');
+  };
+
+  const handleNotificationToggle = async (value: boolean) => {
+    if (value) {
+      const { status } = await Notifications.requestPermissionsAsync();
+      if (status === 'granted') {
+        setNotificationsEnabled(true);
+        Alert.alert(
+          'Уведомления включены',
+          'Вы будете получать напоминания о задачах и перерывах'
+        );
+      } else {
+        Alert.alert(
+          'Доступ запрещён',
+          'Разрешите уведомления в настройках устройства'
+        );
+      }
+    } else {
+      setNotificationsEnabled(false);
+      Alert.alert(
+        'Уведомления отключены',
+        'Вы не будете получать напоминания'
+      );
+    }
+  };
+
+  const handleTaskRemindersToggle = async (value: boolean) => {
+    setTaskReminders(value);
+    await AsyncStorage.setItem('taskReminders', value.toString());
+  };
+
+  const handleBreakRemindersToggle = async (value: boolean) => {
+    setBreakReminders(value);
+    await AsyncStorage.setItem('breakReminders', value.toString());
+  };
+
+  const handleMoodRemindersToggle = async (value: boolean) => {
+    setMoodReminders(value);
+    await AsyncStorage.setItem('moodReminders', value.toString());
+  };
+
+  const handleCalendarSyncToggle = async (value: boolean) => {
+    if (value) {
+      const { status } = await Calendar.requestCalendarPermissionsAsync();
+      if (status === 'granted') {
+        setCalendarSync(true);
+        await AsyncStorage.setItem('calendarSync', 'true');
+        Alert.alert(
+          'Синхронизация включена',
+          'Задачи будут синхронизироваться с календарём'
+        );
+      } else {
+        Alert.alert(
+          'Доступ запрещён',
+          'Разрешите доступ к календарю в настройках устройства'
+        );
+      }
+    } else {
+      setCalendarSync(false);
+      await AsyncStorage.setItem('calendarSync', 'false');
+    }
+  };
+
+  const handleAutoThemeToggle = async (value: boolean) => {
+    setAutoTheme(value);
+    await AsyncStorage.setItem('autoTheme', value.toString());
+    if (value) {
+      Alert.alert(
+        'Автоматическая тема',
+        'Тема будет меняться в зависимости от времени суток'
+      );
+    }
+  };
+
+  const handleExportData = async () => {
     try {
-      await StorageService.saveSettings(newSettings);
-      setSettings(newSettings);
-      if (settings.hapticFeedbackEnabled) {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      Alert.alert(
+        'Экспорт данных',
+        'Выберите формат экспорта',
+        [
+          {
+            text: 'JSON',
+            onPress: () => exportToJSON(),
+          },
+          {
+            text: 'CSV',
+            onPress: () => exportToCSV(),
+          },
+          {
+            text: 'Отмена',
+            style: 'cancel',
+          },
+        ]
+      );
+    } catch (error) {
+      Alert.alert('Ошибка', 'Не удалось экспортировать данные');
+    }
+  };
+
+  const exportToJSON = async () => {
+    try {
+      const data = await exportDatabase();
+      const timestamp = new Date().toISOString().split('T')[0];
+      const filename = `mindflow_export_${timestamp}.json`;
+      const fileUri = `${FileSystem.documentDirectory}${filename}`;
+
+      await FileSystem.writeAsStringAsync(
+        fileUri,
+        JSON.stringify(data, null, 2),
+        { encoding: FileSystem.EncodingType.UTF8 }
+      );
+
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(fileUri);
+      } else {
+        Alert.alert('Успех', `Данные сохранены в ${fileUri}`);
       }
     } catch (error) {
-      console.error('Error saving settings:', error);
-      Alert.alert('Ошибка', 'Не удалось сохранить настройки');
+      Alert.alert('Ошибка', 'Не удалось экспортировать в JSON');
     }
   };
 
-  const handleNotificationsToggle = async (value: boolean) => {
-    if (value) {
-      const hasPermission = await NotificationService.requestPermissions();
-      if (!hasPermission) {
-        Alert.alert(
-          'Требуется разрешение',
-          'Пожалуйста, разрешите уведомления в настройках устройства'
-        );
-        return;
+  const exportToCSV = async () => {
+    try {
+      const data = await exportDatabase();
+      const timestamp = new Date().toISOString().split('T')[0];
+      const filename = `mindflow_export_${timestamp}.csv`;
+      const fileUri = `${FileSystem.documentDirectory}${filename}`;
+
+      let csv = 'Type,Timestamp,Energy,Emoji,Title,Completed\n';
+      
+      if (data.moods) {
+        data.moods.forEach((mood: any) => {
+          csv += `mood,${mood.timestamp},${mood.energy},${mood.emoji},,\n`;
+        });
       }
-      await NotificationService.scheduleDailyReminder(settings.dailyReminderTime);
-    } else {
-      await NotificationService.cancelAllNotifications();
-    }
-    saveSettings({ ...settings, notificationsEnabled: value });
-  };
 
-  const handleHealthKitToggle = async (value: boolean) => {
-    if (value) {
-      const hasPermission = await HealthKitService.requestAuthorization();
-      if (!hasPermission) {
-        Alert.alert(
-          'Требуется разрешение',
-          'Пожалуйста, разрешите доступ к Health в настройках устройства'
-        );
-        return;
+      if (data.tasks) {
+        data.tasks.forEach((task: any) => {
+          csv += `task,${task.created_at},,,"${task.title}",${task.completed}\n`;
+        });
       }
+
+      await FileSystem.writeAsStringAsync(fileUri, csv, {
+        encoding: FileSystem.EncodingType.UTF8,
+      });
+
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(fileUri);
+      } else {
+        Alert.alert('Успех', `Данные сохранены в ${fileUri}`);
+      }
+    } catch (error) {
+      Alert.alert('Ошибка', 'Не удалось экспортировать в CSV');
     }
-    saveSettings({ ...settings, healthKitEnabled: value });
-  };
-
-  const handleDarkModeToggle = (value: boolean) => {
-    toggleTheme();
-    saveSettings({ ...settings, darkModeEnabled: value });
-  };
-
-  const handleHapticToggle = (value: boolean) => {
-    if (value) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    }
-    saveSettings({ ...settings, hapticFeedbackEnabled: value });
-  };
-
-  const handleAutoPlayToggle = (value: boolean) => {
-    saveSettings({ ...settings, autoPlayAudio: value });
-  };
-
-  const handleShareProgressToggle = (value: boolean) => {
-    saveSettings({ ...settings, shareProgressEnabled: value });
-  };
-
-  const handleExerciseDurationChange = (duration: number) => {
-    saveSettings({ ...settings, exerciseDuration: duration });
-  };
-
-  const handleReminderTimePress = () => {
-    Alert.alert(
-      'Время напоминания',
-      'Выберите время для ежедневного напоминания',
-      [
-        { text: '09:00', onPress: () => updateReminderTime('09:00') },
-        { text: '12:00', onPress: () => updateReminderTime('12:00') },
-        { text: '18:00', onPress: () => updateReminderTime('18:00') },
-        { text: '21:00', onPress: () => updateReminderTime('21:00') },
-        { text: 'Отмена', style: 'cancel' },
-      ]
-    );
-  };
-
-  const updateReminderTime = async (time: string) => {
-    if (settings.notificationsEnabled) {
-      await NotificationService.cancelAllNotifications();
-      await NotificationService.scheduleDailyReminder(time);
-    }
-    saveSettings({ ...settings, dailyReminderTime: time });
   };
 
   const handleClearData = () => {
     Alert.alert(
-      'Очистить данные',
-      'Вы уверены? Это действие нельзя отменить. Все ваши сессии, статистика и достижения будут удалены.',
+      'Удалить все данные?',
+      'Это действие нельзя отменить. Все записи настроения, задачи и паттерны будут удалены.',
       [
-        { text: 'Отмена', style: 'cancel' },
+        {
+          text: 'Отмена',
+          style: 'cancel',
+        },
         {
           text: 'Удалить',
           style: 'destructive',
           onPress: async () => {
             try {
-              await StorageService.clearAllData();
-              Alert.alert('Успешно', 'Все данные удалены');
+              await AsyncStorage.clear();
+              Alert.alert('Готово', 'Все данные удалены');
             } catch (error) {
               Alert.alert('Ошибка', 'Не удалось удалить данные');
             }
@@ -161,258 +264,184 @@ export const SettingsScreen: React.FC = () => {
     );
   };
 
-  const SettingItem: React.FC<{
-    title: string;
-    subtitle?: string;
-    value?: boolean;
-    onValueChange?: (value: boolean) => void;
-    onPress?: () => void;
-    rightElement?: React.ReactNode;
-  }> = ({ title, subtitle, value, onValueChange, onPress, rightElement }) => (
-    <TouchableOpacity
-      style={[styles.settingItem, { backgroundColor: theme.colors.surface }]}
-      onPress={onPress}
-      disabled={!onPress && !onValueChange}
-      activeOpacity={onPress ? 0.7 : 1}
-    >
-      <View style={styles.settingLeft}>
-        <Text style={[styles.settingTitle, { color: theme.colors.text }]}>
-          {title}
-        </Text>
-        {subtitle && (
-          <Text style={[styles.settingSubtitle, { color: theme.colors.textSecondary }]}>
-            {subtitle}
-          </Text>
-        )}
-      </View>
-      {rightElement || (
-        onValueChange && (
+  const notificationSettings: SettingItem[] = [
+    {
+      id: 'notifications',
+      title: 'Уведомления',
+      description: 'Разрешить отправку уведомлений',
+      type: 'toggle',
+      value: notificationsEnabled,
+      onToggle: handleNotificationToggle,
+    },
+    {
+      id: 'taskReminders',
+      title: 'Напоминания о задачах',
+      description: 'Уведомления перед началом задач',
+      type: 'toggle',
+      value: taskReminders,
+      onToggle: handleTaskRemindersToggle,
+    },
+    {
+      id: 'breakReminders',
+      title: 'Напоминания о перерывах',
+      description: 'Микропаузы каждые 2-3 часа',
+      type: 'toggle',
+      value: breakReminders,
+      onToggle: handleBreakRemindersToggle,
+    },
+    {
+      id: 'moodReminders',
+      title: 'Напоминания об отметке настроения',
+      description: '3-4 раза в день',
+      type: 'toggle',
+      value: moodReminders,
+      onToggle: handleMoodRemindersToggle,
+    },
+  ];
+
+  const appearanceSettings: SettingItem[] = [
+    {
+      id: 'theme',
+      title: isDark ? 'Тёмная тема' : 'Светлая тема',
+      description: 'Переключить тему приложения',
+      type: 'toggle',
+      value: isDark,
+      onToggle: toggleTheme,
+    },
+    {
+      id: 'autoTheme',
+      title: 'Автоматическая тема',
+      description: 'Менять тему по времени суток',
+      type: 'toggle',
+      value: autoTheme,
+      onToggle: handleAutoThemeToggle,
+    },
+  ];
+
+  const integrationSettings: SettingItem[] = [
+    {
+      id: 'calendarSync',
+      title: 'Синхронизация с календарём',
+      description: 'Интеграция с Google Calendar',
+      type: 'toggle',
+      value: calendarSync,
+      onToggle: handleCalendarSyncToggle,
+    },
+  ];
+
+  const dataSettings: SettingItem[] = [
+    {
+      id: 'export',
+      title: 'Экспорт данных',
+      description: 'Сохранить все данные в файл',
+      type: 'button',
+      onPress: handleExportData,
+    },
+    {
+      id: 'clear',
+      title: 'Удалить все данные',
+      description: 'Очистить всю историю',
+      type: 'button',
+      onPress: handleClearData,
+    },
+  ];
+
+  const renderSettingItem = (item: SettingItem) => {
+    if (item.type === 'toggle') {
+      return (
+        <View key={item.id} style={[styles.settingItem, { backgroundColor: theme.surface }]}>
+          <View style={styles.settingTextContainer}>
+            <Text style={[styles.settingTitle, { color: theme.text }]}>
+              {item.title}
+            </Text>
+            {item.description && (
+              <Text style={[styles.settingDescription, { color: theme.textSecondary }]}>
+                {item.description}
+              </Text>
+            )}
+          </View>
           <Switch
-            value={value}
-            onValueChange={onValueChange}
-            trackColor={{
-              false: theme.colors.border,
-              true: theme.colors.primary,
-            }}
-            thumbColor={Platform.OS === 'ios' ? undefined : theme.colors.surface}
+            value={item.value}
+            onValueChange={item.onToggle}
+            trackColor={{ false: '#D1D5DB', true: theme.primary }}
+            thumbColor={item.value ? '#FFFFFF' : '#F3F4F6'}
+            ios_backgroundColor="#D1D5DB"
           />
-        )
-      )}
-    </TouchableOpacity>
-  );
-
-  const SectionHeader: React.FC<{ title: string }> = ({ title }) => (
-    <Text style={[styles.sectionHeader, { color: theme.colors.textSecondary }]}>
-      {title}
-    </Text>
-  );
-
-  if (isLoading) {
-    return (
-      <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-        <View style={styles.loadingContainer}>
-          <Text style={[styles.loadingText, { color: theme.colors.text }]}>
-            Загрузка настроек...
-          </Text>
         </View>
-      </SafeAreaView>
-    );
-  }
+      );
+    }
+
+    if (item.type === 'button') {
+      return (
+        <TouchableOpacity
+          key={item.id}
+          style={[styles.settingItem, { backgroundColor: theme.surface }]}
+          onPress={item.onPress}
+          activeOpacity={0.7}
+        >
+          <View style={styles.settingTextContainer}>
+            <Text style={[styles.settingTitle, { color: item.id === 'clear' ? '#EF4444' : theme.text }]}>
+              {item.title}
+            </Text>
+            {item.description && (
+              <Text style={[styles.settingDescription, { color: theme.textSecondary }]}>
+                {item.description}
+              </Text>
+            )}
+          </View>
+          <Text style={[styles.chevron, { color: theme.textSecondary }]}>›</Text>
+        </TouchableOpacity>
+      );
+    }
+
+    return null;
+  };
+
+  const renderSection = (title: string, items: SettingItem[]) => (
+    <View style={styles.section}>
+      <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>
+        {title}
+      </Text>
+      <View style={styles.sectionContent}>
+        {items.map((item, index) => (
+          <View key={item.id}>
+            {renderSettingItem(item)}
+            {index < items.length - 1 && (
+              <View style={[styles.separator, { backgroundColor: theme.textSecondary + '20' }]} />
+            )}
+          </View>
+        ))}
+      </View>
+    </View>
+  );
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <View style={styles.header}>
-        <Text style={[styles.headerTitle, { color: theme.colors.text }]}>
-          Настройки
-        </Text>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <View style={[styles.header, { backgroundColor: theme.surface }]}>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>Настройки</Text>
       </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        <SectionHeader title="УВЕДОМЛЕНИЯ" />
-        <SettingItem
-          title="Уведомления"
-          subtitle="Ежедневные напоминания о практике"
-          value={settings.notificationsEnabled}
-          onValueChange={handleNotificationsToggle}
-        />
-        {settings.notificationsEnabled && (
-          <SettingItem
-            title="Время напоминания"
-            subtitle={`Ежедневно в ${settings.dailyReminderTime}`}
-            onPress={handleReminderTimePress}
-            rightElement={
-              <Text style={[styles.valueText, { color: theme.colors.primary }]}>
-                {settings.dailyReminderTime}
-              </Text>
-            }
-          />
-        )}
-
-        <SectionHeader title="БИОМЕТРИЯ" />
-        {Platform.OS === 'ios' && (
-          <SettingItem
-            title="Apple Health"
-            subtitle="Интеграция с данными здоровья"
-            value={settings.healthKitEnabled}
-            onValueChange={handleHealthKitToggle}
-          />
-        )}
-
-        <SectionHeader title="ИНТЕРФЕЙС" />
-        <SettingItem
-          title="Темная тема"
-          subtitle="Автоматически следовать системным настройкам"
-          value={settings.darkModeEnabled}
-          onValueChange={handleDarkModeToggle}
-        />
-        <SettingItem
-          title="Тактильная обратная связь"
-          subtitle="Вибрация при взаимодействии"
-          value={settings.hapticFeedbackEnabled}
-          onValueChange={handleHapticToggle}
-        />
-
-        <SectionHeader title="УПРАЖНЕНИЯ" />
-        <SettingItem
-          title="Длительность по умолчанию"
-          subtitle={`${settings.exerciseDuration} минут`}
-          onPress={() => {
-            Alert.alert(
-              'Длительность упражнения',
-              'Выберите длительность по умолчанию',
-              [
-                { text: '3 минуты', onPress: () => handleExerciseDurationChange(3) },
-                { text: '5 минут', onPress: () => handleExerciseDurationChange(5) },
-                { text: '7 минут', onPress: () => handleExerciseDurationChange(7) },
-                { text: '10 минут', onPress: () => handleExerciseDurationChange(10) },
-                { text: 'Отмена', style: 'cancel' },
-              ]
-            );
-          }}
-          rightElement={
-            <Text style={[styles.valueText, { color: theme.colors.primary }]}>
-              {settings.exerciseDuration} мин
-            </Text>
-          }
-        />
-        <SettingItem
-          title="Автовоспроизведение аудио"
-          subtitle="Запускать аудиогид автоматически"
-          value={settings.autoPlayAudio}
-          onValueChange={handleAutoPlayToggle}
-        />
-
-        <SectionHeader title="КОНФИДЕНЦИАЛЬНОСТЬ" />
-        <SettingItem
-          title="Делиться прогрессом"
-          subtitle="Разрешить создание ссылок для шаринга"
-          value={settings.shareProgressEnabled}
-          onValueChange={handleShareProgressToggle}
-        />
-
-        <SectionHeader title="ДАННЫЕ" />
-        <TouchableOpacity
-          style={[styles.dangerButton, { borderColor: theme.colors.error }]}
-          onPress={handleClearData}
-        >
-          <Text style={[styles.dangerButtonText, { color: theme.colors.error }]}>
-            Очистить все данные
-          </Text>
-        </TouchableOpacity>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {renderSection('Уведомления', notificationSettings)}
+        {renderSection('Внешний вид', appearanceSettings)}
+        {renderSection('Интеграции', integrationSettings)}
+        {renderSection('Данные', dataSettings)}
 
         <View style={styles.footer}>
-          <Text style={[styles.footerText, { color: theme.colors.textSecondary }]}>
-            Версия 1.0.0
+          <Text style={[styles.footerText, { color: theme.textSecondary }]}>
+            MindFlow v1.0.0
           </Text>
-          <Text style={[styles.footerText, { color: theme.colors.textSecondary }]}>
-            © 2024 Mindful Moments
+          <Text style={[styles.footerText, { color: theme.textSecondary }]}>
+            Полностью бесплатно, без рекламы
           </Text>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  header: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-  },
-  headerTitle: {
-    fontSize: 34,
-    fontWeight: '700',
-    letterSpacing: 0.4,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  sectionHeader: {
-    fontSize: 13,
-    fontWeight: '600',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-    paddingHorizontal: 20,
-    paddingTop: 24,
-    paddingBottom: 8,
-  },
-  settingItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    marginHorizontal: 16,
-    marginVertical: 4,
-    borderRadius: 12,
-  },
-  settingLeft: {
-    flex: 1,
-    marginRight: 12,
-  },
-  settingTitle: {
-    fontSize: 17,
-    fontWeight: '500',
-    marginBottom: 2,
-  },
-  settingSubtitle: {
-    fontSize: 13,
-    marginTop: 2,
-  },
-  valueText: {
-    fontSize: 17,
-    fontWeight: '500',
-  },
-  dangerButton: {
-    marginHorizontal: 16,
-    marginVertical: 8,
-    paddingVertical: 14,
-    borderRadius: 12,
-    borderWidth: 2,
-    alignItems: 'center',
-  },
-  dangerButtonText: {
-    fontSize: 17,
-    fontWeight: '600',
-  },
-  footer: {
-    alignItems: 'center',
-    paddingVertical: 32,
-    paddingBottom: 48,
-  },
-  footerText: {
-    fontSize: 13,
-    marginVertical: 4,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    fontSize: 17,
-    fontWeight: '500',
-  },
-});
+const styles

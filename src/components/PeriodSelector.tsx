@@ -59,21 +59,10 @@ const PeriodSelector: React.FC<PeriodSelectorProps> = ({
     [onPeriodChange, translateX]
   );
 
-  const indicatorStyle = useAnimatedStyle(() => {
-    const segmentCount = options.length;
-    return {
-      transform: [
-        {
-          translateX: translateX.value * (1 / segmentCount) * 100 + '%' as unknown as number,
-        },
-      ],
-    };
-  });
-
-  // We use a layout-based approach instead of percentage transforms
   const indicatorAnimatedStyle = useAnimatedStyle(() => {
+    const segmentWidth = 100 / options.length;
     return {
-      left: `${(translateX.value / options.length) * 100}%` as unknown as number,
+      left: `${translateX.value * segmentWidth}%`,
     };
   });
 
@@ -92,7 +81,7 @@ const PeriodSelector: React.FC<PeriodSelectorProps> = ({
         style={[
           styles.indicator,
           {
-            width: `${100 / options.length}%` as unknown as number,
+            width: `${100 / options.length}%`,
             backgroundColor: activeColor,
             borderRadius: borderRadius - 2,
             height: height - 4,

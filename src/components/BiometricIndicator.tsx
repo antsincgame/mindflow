@@ -330,7 +330,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 4,
-    shadowColor: colors.text,
+    shadowColor: colors.text.primary,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -372,7 +372,7 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   label: {
     fontFamily: typography.fontFamily.medium,
-    color: colors.text,
+    color: colors.text.primary,
     textAlign: 'center',
   } as TextStyle,
   status: {

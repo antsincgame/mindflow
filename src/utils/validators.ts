@@ -1,391 +1,360 @@
-import { Emotion } from '../models/Emotion';
-import { Exercise } from '../models/Exercise';
-import { Session } from '../models/Session';
-import { Achievement } from '../models/Achievement';
-import { BiometricData } from '../models/BiometricData';
-import { UserSettings } from '../models/UserSettings';
+export interface ValidationResult {
+  isValid: boolean;
+  error?: string;
+}
 
 export const validators = {
-  // Валидация эмоции
-  isValidEmotion: (emotion: any): emotion is Emotion => {
-    if (!emotion || typeof emotion !== 'object') return false;
-    
-    return (
-      typeof emotion.id === 'string' &&
-      typeof emotion.name === 'string' &&
-      typeof emotion.description === 'string' &&
-      typeof emotion.color === 'string' &&
-      typeof emotion.icon === 'string' &&
-      typeof emotion.intensity === 'number' &&
-      emotion.intensity >= 1 &&
-      emotion.intensity <= 10
-    );
-  },
-
-  // Валидация упражнения
-  isValidExercise: (exercise: any): exercise is Exercise => {
-    if (!exercise || typeof exercise !== 'object') return false;
-
-    const validTypes = ['breathing', 'meditation', 'movement', 'visualization', 'journaling'];
-    const validDurations = [60, 120, 180, 300, 600, 900, 1200, 1800];
-
-    return (
-      typeof exercise.id === 'string' &&
-      typeof exercise.name === 'string' &&
-      typeof exercise.description === 'string' &&
-      validTypes.includes(exercise.type) &&
-      validDurations.includes(exercise.duration) &&
-      typeof exercise.difficulty === 'string' &&
-      ['beginner', 'intermediate', 'advanced'].includes(exercise.difficulty) &&
-      Array.isArray(exercise.emotionIds) &&
-      exercise.emotionIds.every((id: any) => typeof id === 'string') &&
-      Array.isArray(exercise.steps) &&
-      exercise.steps.every((step: any) => typeof step === 'string') &&
-      (exercise.audioUrl === undefined || typeof exercise.audioUrl === 'string') &&
-      (exercise.videoUrl === undefined || typeof exercise.videoUrl === 'string')
-    );
-  },
-
-  // Валидация сессии
-  isValidSession: (session: any): session is Session => {
-    if (!session || typeof session !== 'object') return false;
-
-    return (
-      typeof session.id === 'string' &&
-      typeof session.exerciseId === 'string' &&
-      typeof session.emotionId === 'string' &&
-      session.startTime instanceof Date &&
-      session.endTime instanceof Date &&
-      session.startTime <= session.endTime &&
-      typeof session.duration === 'number' &&
-      session.duration > 0 &&
-      typeof session.completed === 'boolean' &&
-      typeof session.rating === 'number' &&
-      session.rating >= 1 &&
-      session.rating <= 5 &&
-      (session.notes === undefined || typeof session.notes === 'string') &&
-      (session.biometricData === undefined || validators.isValidBiometricData(session.biometricData))
-    );
-  },
-
-  // Валидация достижения
-  isValidAchievement: (achievement: any): achievement is Achievement => {
-    if (!achievement || typeof achievement !== 'object') return false;
-
-    const validCategories = ['streak', 'sessions', 'time', 'variety', 'special'];
-
-    return (
-      typeof achievement.id === 'string' &&
-      typeof achievement.name === 'string' &&
-      typeof achievement.description === 'string' &&
-      validCategories.includes(achievement.category) &&
-      typeof achievement.icon === 'string' &&
-      typeof achievement.unlocked === 'boolean' &&
-      (achievement.unlockedAt === undefined || achievement.unlockedAt instanceof Date) &&
-      typeof achievement.progress === 'number' &&
-      achievement.progress >= 0 &&
-      achievement.progress <= 100 &&
-      typeof achievement.target === 'number' &&
-      achievement.target > 0
-    );
-  },
-
-  // Валидация биометрических данных
-  isValidBiometricData: (data: any): data is BiometricData => {
-    if (!data || typeof data !== 'object') return false;
-
-    return (
-      typeof data.timestamp === 'number' &&
-      data.timestamp > 0 &&
-      (data.heartRate === undefined || (typeof data.heartRate === 'number' && data.heartRate > 0 && data.heartRate < 300)) &&
-      (data.heartRateVariability === undefined || (typeof data.heartRateVariability === 'number' && data.heartRateVariability >= 0)) &&
-      (data.respiratoryRate === undefined || (typeof data.respiratoryRate === 'number' && data.respiratoryRate > 0 && data.respiratoryRate < 100)) &&
-      (data.oxygenSaturation === undefined || (typeof data.oxygenSaturation === 'number' && data.oxygenSaturation >= 0 && data.oxygenSaturation <= 100)) &&
-      (data.stressLevel === undefined || (typeof data.stressLevel === 'number' && data.stressLevel >= 0 && data.stressLevel <= 100)) &&
-      (data.bloodPressureSystolic === undefined || (typeof data.bloodPressureSystolic === 'number' && data.bloodPressureSystolic > 0 && data.bloodPressureSystolic < 300)) &&
-      (data.bloodPressureDiastolic === undefined || (typeof data.bloodPressureDiastolic === 'number' && data.bloodPressureDiastolic > 0 && data.bloodPressureDiastolic < 200))
-    );
-  },
-
-  // Валидация настроек пользователя
-  isValidUserSettings: (settings: any): settings is UserSettings => {
-    if (!settings || typeof settings !== 'object') return false;
-
-    return (
-      typeof settings.notificationsEnabled === 'boolean' &&
-      typeof settings.dailyReminderTime === 'string' &&
-      /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(settings.dailyReminderTime) &&
-      typeof settings.soundEnabled === 'boolean' &&
-      typeof settings.hapticsEnabled === 'boolean' &&
-      typeof settings.theme === 'string' &&
-      ['light', 'dark', 'auto'].includes(settings.theme) &&
-      typeof settings.biometricTrackingEnabled === 'boolean' &&
-      Array.isArray(settings.preferredExerciseTypes) &&
-      settings.preferredExerciseTypes.every((type: any) => 
-        ['breathing', 'meditation', 'movement', 'visualization', 'journaling'].includes(type)
-      ) &&
-      typeof settings.defaultSessionDuration === 'number' &&
-      [60, 120, 180, 300, 600, 900, 1200, 1800].includes(settings.defaultSessionDuration)
-    );
-  },
-
-  // Валидация email
-  isValidEmail: (email: string): boolean => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  },
-
-  // Валидация имени пользователя
-  isValidUsername: (username: string): boolean => {
-    return (
-      typeof username === 'string' &&
-      username.length >= 3 &&
-      username.length <= 30 &&
-      /^[a-zA-Z0-9_]+$/.test(username)
-    );
-  },
-
-  // Валидация даты
-  isValidDate: (date: any): date is Date => {
-    return date instanceof Date && !isNaN(date.getTime());
-  },
-
-  // Валидация диапазона дат
-  isValidDateRange: (startDate: Date, endDate: Date): boolean => {
-    return (
-      validators.isValidDate(startDate) &&
-      validators.isValidDate(endDate) &&
-      startDate <= endDate
-    );
-  },
-
-  // Валидация рейтинга
-  isValidRating: (rating: number): boolean => {
-    return (
-      typeof rating === 'number' &&
-      Number.isInteger(rating) &&
-      rating >= 1 &&
-      rating <= 5
-    );
-  },
-
-  // Валидация интенсивности эмоции
-  isValidEmotionIntensity: (intensity: number): boolean => {
-    return (
-      typeof intensity === 'number' &&
-      Number.isInteger(intensity) &&
-      intensity >= 1 &&
-      intensity <= 10
-    );
-  },
-
-  // Валидация длительности упражнения
-  isValidExerciseDuration: (duration: number): boolean => {
-    const validDurations = [60, 120, 180, 300, 600, 900, 1200, 1800];
-    return validDurations.includes(duration);
-  },
-
-  // Валидация типа упражнения
-  isValidExerciseType: (type: string): boolean => {
-    const validTypes = ['breathing', 'meditation', 'movement', 'visualization', 'journaling'];
-    return validTypes.includes(type);
-  },
-
-  // Валидация уровня сложности
-  isValidDifficulty: (difficulty: string): boolean => {
-    const validDifficulties = ['beginner', 'intermediate', 'advanced'];
-    return validDifficulties.includes(difficulty);
-  },
-
-  // Валидация URL
-  isValidUrl: (url: string): boolean => {
-    try {
-      new URL(url);
-      return true;
-    } catch {
-      return false;
+  taskTitle: (title: string): ValidationResult => {
+    if (!title || title.trim().length === 0) {
+      return {
+        isValid: false,
+        error: 'Название задачи не может быть пустым',
+      };
     }
-  },
 
-  // Валидация HEX цвета
-  isValidHexColor: (color: string): boolean => {
-    return /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(color);
-  },
-
-  // Валидация процента (0-100)
-  isValidPercentage: (value: number): boolean => {
-    return (
-      typeof value === 'number' &&
-      value >= 0 &&
-      value <= 100
-    );
-  },
-
-  // Валидация положительного числа
-  isPositiveNumber: (value: number): boolean => {
-    return typeof value === 'number' && value > 0 && !isNaN(value);
-  },
-
-  // Валидация неотрицательного числа
-  isNonNegativeNumber: (value: number): boolean => {
-    return typeof value === 'number' && value >= 0 && !isNaN(value);
-  },
-
-  // Валидация строки (не пустая)
-  isNonEmptyString: (value: string): boolean => {
-    return typeof value === 'string' && value.trim().length > 0;
-  },
-
-  // Валидация массива (не пустой)
-  isNonEmptyArray: <T>(value: T[]): boolean => {
-    return Array.isArray(value) && value.length > 0;
-  },
-
-  // Валидация времени в формате HH:MM
-  isValidTimeFormat: (time: string): boolean => {
-    return /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(time);
-  },
-
-  // Валидация пульса
-  isValidHeartRate: (heartRate: number): boolean => {
-    return (
-      typeof heartRate === 'number' &&
-      heartRate > 0 &&
-      heartRate < 300
-    );
-  },
-
-  // Валидация вариабельности пульса
-  isValidHRV: (hrv: number): boolean => {
-    return (
-      typeof hrv === 'number' &&
-      hrv >= 0
-    );
-  },
-
-  // Валидация частоты дыхания
-  isValidRespiratoryRate: (rate: number): boolean => {
-    return (
-      typeof rate === 'number' &&
-      rate > 0 &&
-      rate < 100
-    );
-  },
-
-  // Валидация сатурации кислорода
-  isValidOxygenSaturation: (saturation: number): boolean => {
-    return (
-      typeof saturation === 'number' &&
-      saturation >= 0 &&
-      saturation <= 100
-    );
-  },
-
-  // Валидация уровня стресса
-  isValidStressLevel: (level: number): boolean => {
-    return (
-      typeof level === 'number' &&
-      level >= 0 &&
-      level <= 100
-    );
-  },
-
-  // Валидация кровяного давления
-  isValidBloodPressure: (systolic: number, diastolic: number): boolean => {
-    return (
-      typeof systolic === 'number' &&
-      typeof diastolic === 'number' &&
-      systolic > 0 &&
-      systolic < 300 &&
-      diastolic > 0 &&
-      diastolic < 200 &&
-      systolic > diastolic
-    );
-  },
-
-  // Валидация ID
-  isValidId: (id: string): boolean => {
-    return typeof id === 'string' && id.length > 0;
-  },
-
-  // Валидация токена уведомлений
-  isValidPushToken: (token: string): boolean => {
-    return typeof token === 'string' && token.length > 0;
-  },
-
-  // Валидация языка
-  isValidLanguage: (language: string): boolean => {
-    const validLanguages = ['en', 'ru', 'es', 'fr', 'de', 'it', 'pt', 'ja', 'zh', 'ko'];
-    return validLanguages.includes(language);
-  },
-
-  // Валидация единиц измерения
-  isValidUnit: (unit: string): boolean => {
-    const validUnits = ['metric', 'imperial'];
-    return validUnits.includes(unit);
-  },
-
-  // Валидация JSON строки
-  isValidJSON: (jsonString: string): boolean => {
-    try {
-      JSON.parse(jsonString);
-      return true;
-    } catch {
-      return false;
+    if (title.trim().length < 2) {
+      return {
+        isValid: false,
+        error: 'Название задачи должно содержать минимум 2 символа',
+      };
     }
+
+    if (title.length > 200) {
+      return {
+        isValid: false,
+        error: 'Название задачи не может превышать 200 символов',
+      };
+    }
+
+    return { isValid: true };
   },
 
-  // Валидация версии приложения
-  isValidVersion: (version: string): boolean => {
-    return /^\d+\.\d+\.\d+$/.test(version);
+  taskDuration: (duration: number): ValidationResult => {
+    if (!Number.isInteger(duration)) {
+      return {
+        isValid: false,
+        error: 'Длительность должна быть целым числом',
+      };
+    }
+
+    if (duration < 5) {
+      return {
+        isValid: false,
+        error: 'Минимальная длительность задачи — 5 минут',
+      };
+    }
+
+    if (duration > 480) {
+      return {
+        isValid: false,
+        error: 'Максимальная длительность задачи — 8 часов (480 минут)',
+      };
+    }
+
+    return { isValid: true };
   },
 
-  // Валидация streak (серии)
-  isValidStreak: (streak: number): boolean => {
-    return (
-      typeof streak === 'number' &&
-      Number.isInteger(streak) &&
-      streak >= 0
-    );
+  scheduledTime: (timestamp: number): ValidationResult => {
+    if (!Number.isInteger(timestamp)) {
+      return {
+        isValid: false,
+        error: 'Некорректное значение времени',
+      };
+    }
+
+    const now = Date.now();
+    const minTime = now - 365 * 24 * 60 * 60 * 1000; // 1 год назад
+    const maxTime = now + 365 * 24 * 60 * 60 * 1000; // 1 год вперёд
+
+    if (timestamp < minTime) {
+      return {
+        isValid: false,
+        error: 'Дата не может быть более года назад',
+      };
+    }
+
+    if (timestamp > maxTime) {
+      return {
+        isValid: false,
+        error: 'Дата не может быть более года в будущем',
+      };
+    }
+
+    return { isValid: true };
   },
 
-  // Валидация заметок (ограничение по длине)
-  isValidNotes: (notes: string, maxLength: number = 1000): boolean => {
-    return (
-      typeof notes === 'string' &&
-      notes.length <= maxLength
-    );
+  energyLevel: (energy: number): ValidationResult => {
+    if (typeof energy !== 'number' || isNaN(energy)) {
+      return {
+        isValid: false,
+        error: 'Уровень энергии должен быть числом',
+      };
+    }
+
+    if (energy < 0) {
+      return {
+        isValid: false,
+        error: 'Уровень энергии не может быть отрицательным',
+      };
+    }
+
+    if (energy > 100) {
+      return {
+        isValid: false,
+        error: 'Уровень энергии не может превышать 100',
+      };
+    }
+
+    return { isValid: true };
   },
 
-  // Валидация тега
-  isValidTag: (tag: string): boolean => {
-    return (
-      typeof tag === 'string' &&
-      tag.length >= 2 &&
-      tag.length <= 30 &&
-      /^[a-zA-Z0-9_-]+$/.test(tag)
-    );
+  moodEmoji: (emoji: string): ValidationResult => {
+    const validEmojis = ['😫', '😕', '😐', '🙂', '😄'];
+
+    if (!emoji || emoji.trim().length === 0) {
+      return {
+        isValid: false,
+        error: 'Необходимо выбрать настроение',
+      };
+    }
+
+    if (!validEmojis.includes(emoji)) {
+      return {
+        isValid: false,
+        error: 'Выбрано некорректное настроение',
+      };
+    }
+
+    return { isValid: true };
   },
 
-  // Валидация массива тегов
-  isValidTags: (tags: string[]): boolean => {
-    return (
-      Array.isArray(tags) &&
-      tags.every(tag => validators.isValidTag(tag)) &&
-      tags.length <= 10
-    );
+  moodNote: (note: string): ValidationResult => {
+    if (note && note.length > 500) {
+      return {
+        isValid: false,
+        error: 'Заметка не может превышать 500 символов',
+      };
+    }
+
+    return { isValid: true };
   },
 
-  // Валидация временной метки (timestamp)
-  isValidTimestamp: (timestamp: number): boolean => {
-    return (
-      typeof timestamp === 'number' &&
-      timestamp > 0 &&
-      timestamp <= Date.now()
-    );
+  taskPriority: (priority: string): ValidationResult => {
+    const validPriorities = ['low', 'medium', 'high'];
+
+    if (!priority || priority.trim().length === 0) {
+      return {
+        isValid: false,
+        error: 'Необходимо указать приоритет задачи',
+      };
+    }
+
+    if (!validPriorities.includes(priority)) {
+      return {
+        isValid: false,
+        error: 'Некорректный приоритет задачи',
+      };
+    }
+
+    return { isValid: true };
   },
 
-  // Валидация координат (широта, долгота)
-  isValidCoordinates: (latitude: number, longitude: number): boolean => {
-    return (
-      typeof latitude === 'number'
+  taskColor: (color: string): ValidationResult => {
+    const hexColorRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
+
+    if (!color || color.trim().length === 0) {
+      return { isValid: true }; // Цвет опционален
+    }
+
+    if (!hexColorRegex.test(color)) {
+      return {
+        isValid: false,
+        error: 'Цвет должен быть в формате HEX (#RRGGBB)',
+      };
+    }
+
+    return { isValid: true };
+  },
+
+  timestamp: (timestamp: number): ValidationResult => {
+    if (!Number.isInteger(timestamp)) {
+      return {
+        isValid: false,
+        error: 'Некорректное значение временной метки',
+      };
+    }
+
+    if (timestamp < 0) {
+      return {
+        isValid: false,
+        error: 'Временная метка не может быть отрицательной',
+      };
+    }
+
+    const maxTimestamp = 253402300799000; // 31 Dec 9999 23:59:59 GMT
+    if (timestamp > maxTimestamp) {
+      return {
+        isValid: false,
+        error: 'Временная метка выходит за допустимые пределы',
+      };
+    }
+
+    return { isValid: true };
+  },
+
+  id: (id: number): ValidationResult => {
+    if (!Number.isInteger(id)) {
+      return {
+        isValid: false,
+        error: 'ID должен быть целым числом',
+      };
+    }
+
+    if (id <= 0) {
+      return {
+        isValid: false,
+        error: 'ID должен быть положительным числом',
+      };
+    }
+
+    return { isValid: true };
+  },
+};
+
+export const validateTask = (task: {
+  title: string;
+  duration?: number;
+  scheduledTime?: number;
+  priority?: string;
+  color?: string;
+}): ValidationResult => {
+  const titleValidation = validators.taskTitle(task.title);
+  if (!titleValidation.isValid) {
+    return titleValidation;
+  }
+
+  if (task.duration !== undefined) {
+    const durationValidation = validators.taskDuration(task.duration);
+    if (!durationValidation.isValid) {
+      return durationValidation;
+    }
+  }
+
+  if (task.scheduledTime !== undefined) {
+    const timeValidation = validators.scheduledTime(task.scheduledTime);
+    if (!timeValidation.isValid) {
+      return timeValidation;
+    }
+  }
+
+  if (task.priority) {
+    const priorityValidation = validators.taskPriority(task.priority);
+    if (!priorityValidation.isValid) {
+      return priorityValidation;
+    }
+  }
+
+  if (task.color) {
+    const colorValidation = validators.taskColor(task.color);
+    if (!colorValidation.isValid) {
+      return colorValidation;
+    }
+  }
+
+  return { isValid: true };
+};
+
+export const validateMood = (mood: {
+  energy: number;
+  emoji: string;
+  note?: string;
+  timestamp?: number;
+}): ValidationResult => {
+  const energyValidation = validators.energyLevel(mood.energy);
+  if (!energyValidation.isValid) {
+    return energyValidation;
+  }
+
+  const emojiValidation = validators.moodEmoji(mood.emoji);
+  if (!emojiValidation.isValid) {
+    return emojiValidation;
+  }
+
+  if (mood.note) {
+    const noteValidation = validators.moodNote(mood.note);
+    if (!noteValidation.isValid) {
+      return noteValidation;
+    }
+  }
+
+  if (mood.timestamp !== undefined) {
+    const timestampValidation = validators.timestamp(mood.timestamp);
+    if (!timestampValidation.isValid) {
+      return timestampValidation;
+    }
+  }
+
+  return { isValid: true };
+};
+
+export const sanitizeTaskTitle = (title: string): string => {
+  return title.trim().replace(/\s+/g, ' ').slice(0, 200);
+};
+
+export const sanitizeMoodNote = (note: string): string => {
+  return note.trim().replace(/\s+/g, ' ').slice(0, 500);
+};
+
+export const clampEnergyLevel = (energy: number): number => {
+  return Math.max(0, Math.min(100, Math.round(energy)));
+};
+
+export const isValidTimeRange = (
+  startTime: number,
+  endTime: number
+): ValidationResult => {
+  const startValidation = validators.timestamp(startTime);
+  if (!startValidation.isValid) {
+    return startValidation;
+  }
+
+  const endValidation = validators.timestamp(endTime);
+  if (!endValidation.isValid) {
+    return endValidation;
+  }
+
+  if (startTime >= endTime) {
+    return {
+      isValid: false,
+      error: 'Время начала должно быть раньше времени окончания',
+    };
+  }
+
+  const duration = endTime - startTime;
+  const maxDuration = 24 * 60 * 60 * 1000; // 24 часа
+
+  if (duration > maxDuration) {
+    return {
+      isValid: false,
+      error: 'Временной диапазон не может превышать 24 часа',
+    };
+  }
+
+  return { isValid: true };
+};
+
+export const isTaskOverlapping = (
+  task1Start: number,
+  task1Duration: number,
+  task2Start: number,
+  task2Duration: number
+): boolean => {
+  const task1End = task1Start + task1Duration * 60 * 1000;
+  const task2End = task2Start + task2Duration * 60 * 1000;
+
+  return (
+    (task1Start >= task2Start && task1Start < task2End) ||
+    (task1End > task2Start && task1End <= task2End) ||
+    (task1Start <= task2Start && task1End >= task2End)
+  );
+};

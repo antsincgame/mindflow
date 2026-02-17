@@ -1,174 +1,317 @@
-import { format, formatDistanceToNow, isToday, isYesterday, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, differenceInDays, differenceInMinutes, addDays, subDays, isSameDay, parseISO, isValid } from 'date-fns';
+import { format, startOfWeek, endOfWeek, startOfDay, endOfDay, addDays, subDays, differenceInMinutes, differenceInHours, differenceInDays, isToday, isTomorrow, isYesterday, startOfMonth, endOfMonth, eachDayOfInterval, getDay, getHour, setHours, setMinutes, parseISO, isWithinInterval, addMinutes, addHours, isSameDay, isSameWeek, isSameMonth, startOfYear, endOfYear } from 'date-fns';
 import { ru } from 'date-fns/locale';
 
 /**
- * Форматирует дату в читаемый формат
+ * Форматирует дату в строку по заданному формату
  */
-export const formatDate = (date: Date | string, formatStr: string = 'dd.MM.yyyy'): string => {
-  const dateObj = typeof date === 'string' ? parseISO(date) : date;
-  if (!isValid(dateObj)) return '';
-  return format(dateObj, formatStr, { locale: ru });
+export const formatDate = (date: Date | number, formatString: string = 'dd.MM.yyyy'): string => {
+  const dateObj = typeof date === 'number' ? new Date(date * 1000) : date;
+  return format(dateObj, formatString, { locale: ru });
 };
 
 /**
- * Форматирует время в формат HH:mm
+ * Форматирует время в строку HH:mm
  */
-export const formatTime = (date: Date | string): string => {
-  const dateObj = typeof date === 'string' ? parseISO(date) : date;
-  if (!isValid(dateObj)) return '';
+export const formatTime = (date: Date | number): string => {
+  const dateObj = typeof date === 'number' ? new Date(date * 1000) : date;
   return format(dateObj, 'HH:mm', { locale: ru });
 };
 
 /**
  * Форматирует дату и время
  */
-export const formatDateTime = (date: Date | string): string => {
-  const dateObj = typeof date === 'string' ? parseISO(date) : date;
-  if (!isValid(dateObj)) return '';
+export const formatDateTime = (date: Date | number): string => {
+  const dateObj = typeof date === 'number' ? new Date(date * 1000) : date;
   return format(dateObj, 'dd.MM.yyyy HH:mm', { locale: ru });
 };
 
 /**
- * Возвращает относительное время (например, "2 часа назад")
+ * Форматирует дату в относительном формате (Сегодня, Вчера, Завтра)
  */
-export const getRelativeTime = (date: Date | string): string => {
-  const dateObj = typeof date === 'string' ? parseISO(date) : date;
-  if (!isValid(dateObj)) return '';
+export const formatRelativeDate = (date: Date | number): string => {
+  const dateObj = typeof date === 'number' ? new Date(date * 1000) : date;
   
   if (isToday(dateObj)) {
-    return `Сегодня в ${formatTime(dateObj)}`;
+    return 'Сегодня';
   }
-  
+  if (isTomorrow(dateObj)) {
+    return 'Завтра';
+  }
   if (isYesterday(dateObj)) {
-    return `Вчера в ${formatTime(dateObj)}`;
+    return 'Вчера';
   }
   
-  return formatDistanceToNow(dateObj, { addSuffix: true, locale: ru });
+  return format(dateObj, 'd MMMM', { locale: ru });
 };
 
 /**
- * Проверяет, является ли дата сегодняшней
+ * Форматирует дату с временем в относительном формате
  */
-export const isDateToday = (date: Date | string): boolean => {
-  const dateObj = typeof date === 'string' ? parseISO(date) : date;
-  if (!isValid(dateObj)) return false;
-  return isToday(dateObj);
-};
-
-/**
- * Проверяет, является ли дата вчерашней
- */
-export const isDateYesterday = (date: Date | string): boolean => {
-  const dateObj = typeof date === 'string' ? parseISO(date) : date;
-  if (!isValid(dateObj)) return false;
-  return isYesterday(dateObj);
-};
-
-/**
- * Возвращает начало текущей недели
- */
-export const getStartOfWeek = (date: Date = new Date()): Date => {
-  return startOfWeek(date, { weekStartsOn: 1 }); // Неделя начинается с понедельника
-};
-
-/**
- * Возвращает конец текущей недели
- */
-export const getEndOfWeek = (date: Date = new Date()): Date => {
-  return endOfWeek(date, { weekStartsOn: 1 });
-};
-
-/**
- * Возвращает начало текущего месяца
- */
-export const getStartOfMonth = (date: Date = new Date()): Date => {
-  return startOfMonth(date);
-};
-
-/**
- * Возвращает конец текущего месяца
- */
-export const getEndOfMonth = (date: Date = new Date()): Date => {
-  return endOfMonth(date);
-};
-
-/**
- * Возвращает массив дат в заданном интервале
- */
-export const getDatesInRange = (startDate: Date, endDate: Date): Date[] => {
-  return eachDayOfInterval({ start: startDate, end: endDate });
-};
-
-/**
- * Возвращает массив дат текущей недели
- */
-export const getCurrentWeekDates = (): Date[] => {
-  const start = getStartOfWeek();
-  const end = getEndOfWeek();
-  return getDatesInRange(start, end);
-};
-
-/**
- * Возвращает массив дат текущего месяца
- */
-export const getCurrentMonthDates = (): Date[] => {
-  const start = getStartOfMonth();
-  const end = getEndOfMonth();
-  return getDatesInRange(start, end);
-};
-
-/**
- * Возвращает разницу в днях между датами
- */
-export const getDaysDifference = (date1: Date | string, date2: Date | string): number => {
-  const dateObj1 = typeof date1 === 'string' ? parseISO(date1) : date1;
-  const dateObj2 = typeof date2 === 'string' ? parseISO(date2) : date2;
+export const formatRelativeDateTime = (date: Date | number): string => {
+  const dateObj = typeof date === 'number' ? new Date(date * 1000) : date;
+  const relativeDate = formatRelativeDate(dateObj);
+  const time = formatTime(dateObj);
   
-  if (!isValid(dateObj1) || !isValid(dateObj2)) return 0;
-  
-  return Math.abs(differenceInDays(dateObj1, dateObj2));
+  return `${relativeDate}, ${time}`;
 };
 
 /**
- * Возвращает разницу в минутах между датами
+ * Форматирует день недели
  */
-export const getMinutesDifference = (date1: Date | string, date2: Date | string): number => {
-  const dateObj1 = typeof date1 === 'string' ? parseISO(date1) : date1;
-  const dateObj2 = typeof date2 === 'string' ? parseISO(date2) : date2;
-  
-  if (!isValid(dateObj1) || !isValid(dateObj2)) return 0;
-  
-  return Math.abs(differenceInMinutes(dateObj1, dateObj2));
+export const formatDayOfWeek = (date: Date | number, short: boolean = false): string => {
+  const dateObj = typeof date === 'number' ? new Date(date * 1000) : date;
+  return format(dateObj, short ? 'EEEEEE' : 'EEEE', { locale: ru });
+};
+
+/**
+ * Получает начало недели
+ */
+export const getWeekStart = (date: Date | number = new Date()): Date => {
+  const dateObj = typeof date === 'number' ? new Date(date * 1000) : date;
+  return startOfWeek(dateObj, { weekStartsOn: 1 }); // Неделя начинается с понедельника
+};
+
+/**
+ * Получает конец недели
+ */
+export const getWeekEnd = (date: Date | number = new Date()): Date => {
+  const dateObj = typeof date === 'number' ? new Date(date * 1000) : date;
+  return endOfWeek(dateObj, { weekStartsOn: 1 });
+};
+
+/**
+ * Получает начало дня
+ */
+export const getDayStart = (date: Date | number = new Date()): Date => {
+  const dateObj = typeof date === 'number' ? new Date(date * 1000) : date;
+  return startOfDay(dateObj);
+};
+
+/**
+ * Получает конец дня
+ */
+export const getDayEnd = (date: Date | number = new Date()): Date => {
+  const dateObj = typeof date === 'number' ? new Date(date * 1000) : date;
+  return endOfDay(dateObj);
+};
+
+/**
+ * Получает начало месяца
+ */
+export const getMonthStart = (date: Date | number = new Date()): Date => {
+  const dateObj = typeof date === 'number' ? new Date(date * 1000) : date;
+  return startOfMonth(dateObj);
+};
+
+/**
+ * Получает конец месяца
+ */
+export const getMonthEnd = (date: Date | number = new Date()): Date => {
+  const dateObj = typeof date === 'number' ? new Date(date * 1000) : date;
+  return endOfMonth(dateObj);
+};
+
+/**
+ * Получает начало года
+ */
+export const getYearStart = (date: Date | number = new Date()): Date => {
+  const dateObj = typeof date === 'number' ? new Date(date * 1000) : date;
+  return startOfYear(dateObj);
+};
+
+/**
+ * Получает конец года
+ */
+export const getYearEnd = (date: Date | number = new Date()): Date => {
+  const dateObj = typeof date === 'number' ? new Date(date * 1000) : date;
+  return endOfYear(dateObj);
+};
+
+/**
+ * Получает массив дат для недели
+ */
+export const getWeekDays = (date: Date | number = new Date()): Date[] => {
+  const start = getWeekStart(date);
+  const end = getWeekEnd(date);
+  return eachDayOfInterval({ start, end });
+};
+
+/**
+ * Получает массив дат для месяца
+ */
+export const getMonthDays = (date: Date | number = new Date()): Date[] => {
+  const start = getMonthStart(date);
+  const end = getMonthEnd(date);
+  return eachDayOfInterval({ start, end });
 };
 
 /**
  * Добавляет дни к дате
  */
-export const addDaysToDate = (date: Date | string, days: number): Date => {
-  const dateObj = typeof date === 'string' ? parseISO(date) : date;
-  if (!isValid(dateObj)) return new Date();
+export const addDaysToDate = (date: Date | number, days: number): Date => {
+  const dateObj = typeof date === 'number' ? new Date(date * 1000) : date;
   return addDays(dateObj, days);
 };
 
 /**
  * Вычитает дни из даты
  */
-export const subtractDaysFromDate = (date: Date | string, days: number): Date => {
-  const dateObj = typeof date === 'string' ? parseISO(date) : date;
-  if (!isValid(dateObj)) return new Date();
+export const subtractDaysFromDate = (date: Date | number, days: number): Date => {
+  const dateObj = typeof date === 'number' ? new Date(date * 1000) : date;
   return subDays(dateObj, days);
 };
 
 /**
- * Проверяет, совпадают ли две даты (без учета времени)
+ * Добавляет минуты к дате
  */
-export const isSameDate = (date1: Date | string, date2: Date | string): boolean => {
-  const dateObj1 = typeof date1 === 'string' ? parseISO(date1) : date1;
-  const dateObj2 = typeof date2 === 'string' ? parseISO(date2) : date2;
+export const addMinutesToDate = (date: Date | number, minutes: number): Date => {
+  const dateObj = typeof date === 'number' ? new Date(date * 1000) : date;
+  return addMinutes(dateObj, minutes);
+};
+
+/**
+ * Добавляет часы к дате
+ */
+export const addHoursToDate = (date: Date | number, hours: number): Date => {
+  const dateObj = typeof date === 'number' ? new Date(date * 1000) : date;
+  return addHours(dateObj, hours);
+};
+
+/**
+ * Вычисляет разницу в минутах между двумя датами
+ */
+export const getMinutesDifference = (dateLeft: Date | number, dateRight: Date | number): number => {
+  const left = typeof dateLeft === 'number' ? new Date(dateLeft * 1000) : dateLeft;
+  const right = typeof dateRight === 'number' ? new Date(dateRight * 1000) : dateRight;
+  return differenceInMinutes(left, right);
+};
+
+/**
+ * Вычисляет разницу в часах между двумя датами
+ */
+export const getHoursDifference = (dateLeft: Date | number, dateRight: Date | number): number => {
+  const left = typeof dateLeft === 'number' ? new Date(dateLeft * 1000) : dateLeft;
+  const right = typeof dateRight === 'number' ? new Date(dateRight * 1000) : dateRight;
+  return differenceInHours(left, right);
+};
+
+/**
+ * Вычисляет разницу в днях между двумя датами
+ */
+export const getDaysDifference = (dateLeft: Date | number, dateRight: Date | number): number => {
+  const left = typeof dateLeft === 'number' ? new Date(dateLeft * 1000) : dateLeft;
+  const right = typeof dateRight === 'number' ? new Date(dateRight * 1000) : dateRight;
+  return differenceInDays(left, right);
+};
+
+/**
+ * Проверяет, является ли дата сегодняшней
+ */
+export const isDateToday = (date: Date | number): boolean => {
+  const dateObj = typeof date === 'number' ? new Date(date * 1000) : date;
+  return isToday(dateObj);
+};
+
+/**
+ * Проверяет, является ли дата завтрашней
+ */
+export const isDateTomorrow = (date: Date | number): boolean => {
+  const dateObj = typeof date === 'number' ? new Date(date * 1000) : date;
+  return isTomorrow(dateObj);
+};
+
+/**
+ * Проверяет, является ли дата вчерашней
+ */
+export const isDateYesterday = (date: Date | number): boolean => {
+  const dateObj = typeof date === 'number' ? new Date(date * 1000) : date;
+  return isYesterday(dateObj);
+};
+
+/**
+ * Проверяет, совпадают ли два дня
+ */
+export const areSameDay = (dateLeft: Date | number, dateRight: Date | number): boolean => {
+  const left = typeof dateLeft === 'number' ? new Date(dateLeft * 1000) : dateLeft;
+  const right = typeof dateRight === 'number' ? new Date(dateRight * 1000) : dateRight;
+  return isSameDay(left, right);
+};
+
+/**
+ * Проверяет, находятся ли даты в одной неделе
+ */
+export const areSameWeek = (dateLeft: Date | number, dateRight: Date | number): boolean => {
+  const left = typeof dateLeft === 'number' ? new Date(dateLeft * 1000) : dateLeft;
+  const right = typeof dateRight === 'number' ? new Date(dateRight * 1000) : dateRight;
+  return isSameWeek(left, right, { weekStartsOn: 1 });
+};
+
+/**
+ * Проверяет, находятся ли даты в одном месяце
+ */
+export const areSameMonth = (dateLeft: Date | number, dateRight: Date | number): boolean => {
+  const left = typeof dateLeft === 'number' ? new Date(dateLeft * 1000) : dateLeft;
+  const right = typeof dateRight === 'number' ? new Date(dateRight * 1000) : dateRight;
+  return isSameMonth(left, right);
+};
+
+/**
+ * Получает день недели (0 - воскресенье, 6 - суббота)
+ */
+export const getDayOfWeek = (date: Date | number): number => {
+  const dateObj = typeof date === 'number' ? new Date(date * 1000) : date;
+  return getDay(dateObj);
+};
+
+/**
+ * Получает час дня (0-23)
+ */
+export const getHourOfDay = (date: Date | number): number => {
+  const dateObj = typeof date === 'number' ? new Date(date * 1000) : date;
+  return getHour(dateObj);
+};
+
+/**
+ * Устанавливает час и минуты для даты
+ */
+export const setTimeToDate = (date: Date | number, hours: number, minutes: number = 0): Date => {
+  const dateObj = typeof date === 'number' ? new Date(date * 1000) : date;
+  let result = setHours(dateObj, hours);
+  result = setMinutes(result, minutes);
+  return result;
+};
+
+/**
+ * Парсит ISO строку в дату
+ */
+export const parseISOString = (isoString: string): Date => {
+  return parseISO(isoString);
+};
+
+/**
+ * Проверяет, находится ли дата в интервале
+ */
+export const isDateWithinInterval = (date: Date | number, start: Date | number, end: Date | number): boolean => {
+  const dateObj = typeof date === 'number' ? new Date(date * 1000) : date;
+  const startObj = typeof start === 'number' ? new Date(start * 1000) : start;
+  const endObj = typeof end === 'number' ? new Date(end * 1000) : end;
   
-  if (!isValid(dateObj1) || !isValid(dateObj2)) return false;
-  
-  return isSameDay(dateObj1, dateObj2);
+  return isWithinInterval(dateObj, { start: startObj, end: endObj });
+};
+
+/**
+ * Конвертирует дату в Unix timestamp (секунды)
+ */
+export const toUnixTimestamp = (date: Date | number): number => {
+  const dateObj = typeof date === 'number' ? date : Math.floor(date.getTime() / 1000);
+  return dateObj;
+};
+
+/**
+ * Конвертирует Unix timestamp в дату
+ */
+export const fromUnixTimestamp = (timestamp: number): Date => {
+  return new Date(timestamp * 1000);
 };
 
 /**
@@ -190,188 +333,39 @@ export const formatDuration = (minutes: number): string => {
 };
 
 /**
- * Форматирует секунды в формат mm:ss
+ * Получает временные слоты для дня (каждые N минут)
  */
-export const formatSeconds = (seconds: number): string => {
-  const mins = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-};
-
-/**
- * Возвращает название дня недели
- */
-export const getDayName = (date: Date | string, short: boolean = false): string => {
-  const dateObj = typeof date === 'string' ? parseISO(date) : date;
-  if (!isValid(dateObj)) return '';
+export const getDayTimeSlots = (date: Date | number, intervalMinutes: number = 30): Date[] => {
+  const dateObj = typeof date === 'number' ? new Date(date * 1000) : date;
+  const start = getDayStart(dateObj);
+  const end = getDayEnd(dateObj);
   
-  const formatStr = short ? 'EEEEEE' : 'EEEE';
-  return format(dateObj, formatStr, { locale: ru });
-};
-
-/**
- * Возвращает название месяца
- */
-export const getMonthName = (date: Date | string, short: boolean = false): string => {
-  const dateObj = typeof date === 'string' ? parseISO(date) : date;
-  if (!isValid(dateObj)) return '';
+  const slots: Date[] = [];
+  let current = start;
   
-  const formatStr = short ? 'MMM' : 'MMMM';
-  return format(dateObj, formatStr, { locale: ru });
-};
-
-/**
- * Возвращает дату в формате ISO
- */
-export const toISOString = (date: Date | string): string => {
-  const dateObj = typeof date === 'string' ? parseISO(date) : date;
-  if (!isValid(dateObj)) return '';
-  return dateObj.toISOString();
-};
-
-/**
- * Парсит ISO строку в Date
- */
-export const fromISOString = (isoString: string): Date | null => {
-  const date = parseISO(isoString);
-  return isValid(date) ? date : null;
-};
-
-/**
- * Возвращает массив последних N дней (включая сегодня)
- */
-export const getLastNDays = (n: number): Date[] => {
-  const today = new Date();
-  const dates: Date[] = [];
-  
-  for (let i = n - 1; i >= 0; i--) {
-    dates.push(subtractDaysFromDate(today, i));
+  while (current <= end) {
+    slots.push(current);
+    current = addMinutes(current, intervalMinutes);
   }
   
-  return dates;
+  return slots;
 };
 
 /**
- * Возвращает количество дней в месяце
+ * Получает рабочие часы (9:00 - 18:00)
  */
-export const getDaysInMonth = (date: Date = new Date()): number => {
-  const start = getStartOfMonth(date);
-  const end = getEndOfMonth(date);
-  return differenceInDays(end, start) + 1;
+export const getWorkingHours = (date: Date | number): { start: Date; end: Date } => {
+  const dateObj = typeof date === 'number' ? new Date(date * 1000) : date;
+  const start = setTimeToDate(dateObj, 9, 0);
+  const end = setTimeToDate(dateObj, 18, 0);
+  
+  return { start, end };
 };
 
 /**
- * Проверяет, является ли дата валидной
+ * Проверяет, является ли время рабочим
  */
-export const isValidDate = (date: any): boolean => {
-  if (date instanceof Date) {
-    return isValid(date);
-  }
-  
-  if (typeof date === 'string') {
-    const parsed = parseISO(date);
-    return isValid(parsed);
-  }
-  
-  return false;
-};
-
-/**
- * Возвращает текущую дату без времени
- */
-export const getTodayWithoutTime = (): Date => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return today;
-};
-
-/**
- * Форматирует дату для календаря (yyyy-MM-dd)
- */
-export const formatCalendarDate = (date: Date | string): string => {
-  const dateObj = typeof date === 'string' ? parseISO(date) : date;
-  if (!isValid(dateObj)) return '';
-  return format(dateObj, 'yyyy-MM-dd');
-};
-
-/**
- * Возвращает строку с датой для отображения в списке сессий
- */
-export const getSessionDateLabel = (date: Date | string): string => {
-  const dateObj = typeof date === 'string' ? parseISO(date) : date;
-  if (!isValid(dateObj)) return '';
-  
-  if (isToday(dateObj)) {
-    return 'Сегодня';
-  }
-  
-  if (isYesterday(dateObj)) {
-    return 'Вчера';
-  }
-  
-  return format(dateObj, 'd MMMM', { locale: ru });
-};
-
-/**
- * Возвращает количество недель между датами
- */
-export const getWeeksDifference = (date1: Date | string, date2: Date | string): number => {
-  const days = getDaysDifference(date1, date2);
-  return Math.floor(days / 7);
-};
-
-/**
- * Проверяет, находится ли дата в текущей неделе
- */
-export const isInCurrentWeek = (date: Date | string): boolean => {
-  const dateObj = typeof date === 'string' ? parseISO(date) : date;
-  if (!isValid(dateObj)) return false;
-  
-  const start = getStartOfWeek();
-  const end = getEndOfWeek();
-  
-  return dateObj >= start && dateObj <= end;
-};
-
-/**
- * Проверяет, находится ли дата в текущем месяце
- */
-export const isInCurrentMonth = (date: Date | string): boolean => {
-  const dateObj = typeof date === 'string' ? parseISO(date) : date;
-  if (!isValid(dateObj)) return false;
-  
-  const start = getStartOfMonth();
-  const end = getEndOfMonth();
-  
-  return dateObj >= start && dateObj <= end;
-};
-
-/**
- * Возвращает время суток (утро, день, вечер, ночь)
- */
-export const getTimeOfDay = (date: Date = new Date()): 'morning' | 'afternoon' | 'evening' | 'night' => {
-  const hour = date.getHours();
-  
-  if (hour >= 6 && hour < 12) return 'morning';
-  if (hour >= 12 && hour < 18) return 'afternoon';
-  if (hour >= 18 && hour < 22) return 'evening';
-  return 'night';
-};
-
-/**
- * Возвращает приветствие в зависимости от времени суток
- */
-export const getGreeting = (): string => {
-  const timeOfDay = getTimeOfDay();
-  
-  switch (timeOfDay) {
-    case 'morning':
-      return 'Доброе утро';
-    case 'afternoon':
-      return 'Добрый день';
-    case 'evening':
-      return 'Добрый вечер';
-    case 'night':
-      return 'Доброй ночи';
-  }
-};
+export const isWorkingHour = (date: Date | number): boolean => {
+  const dateObj = typeof date === 'number' ? new Date(date * 1000) : date;
+  const hour = getHourOfDay(dateObj);
+  return hour >= 9

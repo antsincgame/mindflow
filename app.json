@@ -12,14 +12,25 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.mindflow.app"
+      "bundleIdentifier": "com.generated.mindflow",
+      "infoPlist": {
+        "NSCalendarsUsageDescription": "Это приложение использует календарь для планирования задач и напоминаний.",
+        "NSRemindersUsageDescription": "Это приложение использует напоминания для уведомлений о задачах.",
+        "NSUserNotificationsUsageDescription": "Это приложение отправляет уведомления для напоминаний о задачах и сессиях."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.mindflow.app"
+      "package": "com.generated.mindflow",
+      "permissions": [
+        "android.permission.READ_CALENDAR",
+        "android.permission.WRITE_CALENDAR",
+        "android.permission.VIBRATE",
+        "android.permission.POST_NOTIFICATIONS"
+      ]
     }
   }
 }
